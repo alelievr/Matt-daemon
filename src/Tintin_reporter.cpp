@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:03:10 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/08 13:13:26 by alelievr         ###   ########.fr       */
+/*   Updated: 2016/12/08 13:38:29 by alelievr         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,12 @@ Tintin_reporter::Tintin_reporter(void) : _logStream(NULL)
 Tintin_reporter::~Tintin_reporter(void)
 {
 	std::cout << "Destructor of Tintin_reporter called" << std::endl;
+}
+
+int		Tintin_reporter::writeToLog(const std::string & message) const
+{
+	(void)message;
+	return (0);
 }
 
 std::ostream &	operator<<(std::ostream & o, Tintin_reporter const & r)
