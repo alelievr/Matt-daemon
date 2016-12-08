@@ -4,6 +4,8 @@
 *.o
 *.obj
 obj/
+Ben_AFK
+Matt_daemon
 
 # Precompiled Headers
 *.gch

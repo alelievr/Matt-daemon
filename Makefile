@@ -6,7 +6,7 @@
 #    By: alelievr <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/07/15 15:13:38 by alelievr          #+#    #+#              #
-#    Updated: 2016/12/08 13:32:44 by alelievr         ###   ########.fr        #
+#    Updated: 2016/12/08 17:04:27 by alelievr         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,13 +15,18 @@
 #################
 
 #	Sources
-SRCDIR		=	src
-SRC			=	main.c				\
+SRCSERVDIR	=	src/server
+SRCSERV		=	main.c				\
 				Tintin_reporter.cpp	\
 				RSA.cpp				\
+				Server.cpp			\
+
+SRCCLIENTDIR=	src/client
+SRCCLIENT	=	main.c				\
 
 #	Objects
-OBJDIR		=	obj
+OBJCLIENTDIR=	obj/client
+OBJSERVDIR	=	obj/server
 
 #	Variables
 LIBFT		=	2	#1 or 0 to include the libft / 2 for autodetct
@@ -34,14 +39,15 @@ CPPVERSION	=	c++11
 #Example $> make DEBUG=2 will set debuglevel to 2
 
 #	Includes
-INCDIRS		=	inc
+INCDIRS		=	inc/server inc/client
 
 #	Libraries
 LIBDIRS		=	
 LDLIBS		=	
 
 #	Output
-NAME		=	a.out
+SERVNAME	=	Matt_daemon
+CLIENTNAME	=	Ben_AFK
 
 #	Compiler
 WERROR		=	-Werror
@@ -100,10 +106,15 @@ endif
 #################
 
 NASM		=	nasm
-OBJS		=	$(patsubst %.c,%.o, $(filter %.c, $(SRC))) \
-				$(patsubst %.cpp,%.o, $(filter %.cpp, $(SRC))) \
-				$(patsubst %.s,%.o, $(filter %.s, $(SRC)))
-OBJ			=	$(addprefix $(OBJDIR)/,$(notdir $(OBJS)))
+SERVOBJS	=	$(patsubst %.c,%.o, $(filter %.c, $(SRCSERV))) \
+				$(patsubst %.cpp,%.o, $(filter %.cpp, $(SRCSERV))) \
+				$(patsubst %.s,%.o, $(filter %.s, $(SRCSERV)))
+CLIENTOBJS	=	$(patsubst %.c,%.o, $(filter %.c, $(SRCCLIENT))) \
+				$(patsubst %.cpp,%.o, $(filter %.cpp, $(SRCCLIENT))) \
+				$(patsubst %.s,%.o, $(filter %.s, $(SRCCLIENT)))
+SERVOBJ		=	$(addprefix $(OBJSERVDIR)/,$(notdir $(SERVOBJS)))
+CLIENTOBJ	=	$(addprefix $(OBJCLIENTDIR)/,$(notdir $(CLIENTOBJS)))
+OBJS		=	$(SERVOBJ) $(CLIENTOBJ)
 NORME		=	**/*.[ch]
 VPATH		+=	$(dir $(addprefix $(SRCDIR)/,$(SRC)))
 VFRAME		=	$(addprefix -framework ,$(FRAMEWORK))
@@ -169,41 +180,52 @@ endif
 #################
 
 #	First target
-all: $(NAME)
+all: $(SERVNAME) $(CLIENTNAME)
+
+client: $(CLIENTNAME)
+
+server: $(SERVNAME)
 
 #	Linking
-$(NAME): $(OBJ)
-	@$(if $(findstring lft,$(LDLIBS)),$(call color_exec_t,$(CCLEAR),$(CCLEAR),\
-		make -j 4 -C libft))
-	@$(call color_exec,$(CLINK_T),$(CLINK),"Link of $(NAME):",\
+$(SERVNAME): $(SERVOBJ)
+	@$(call color_exec,$(CLINK_T),$(CLINK),"Link of $(SERVNAME):",\
 		$(LINKER) $(WERROR) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(OPTFLAGS) $(DEBUGFLAGS) $(LINKDEBUG) $(VFRAME) -o $@ $^)
 
-$(OBJDIR)/%.o: %.cpp $(INCFILES)
-	@mkdir -p $(OBJDIR)
+$(CLIENTNAME): $(CLIENTOBJ)
+	@$(call color_exec,$(CLINK_T),$(CLINK),"Link of $(CLIENTNAME):",\
+		$(LINKER) $(WERROR) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(OPTFLAGS) $(DEBUGFLAGS) $(LINKDEBUG) $(VFRAME) -o $@ $^)
+
+#	Objects compilation
+$(OBJSERVDIR)/%.o:  $(SRCSERVDIR)/%.cpp $(INCFILES)
+	@mkdir -p $(OBJSERVDIR)
 	@$(call color_exec,$(COBJ_T),$(COBJ),"Object: $@",\
 		$(CXX) -std=$(CPPVERSION) $(WERROR) $(CFLAGS) $(OPTFLAGS) $(DEBUGFLAGS) $(CPPFLAGS) -o $@ -c $<)
 
-#	Objects compilation
-$(OBJDIR)/%.o: %.c $(INCFILES)
-	@mkdir -p $(OBJDIR)
+$(OBJSERVDIR)/%.o: $(SRCSERVDIR)/%.c $(INCFILES)
+	@mkdir -p $(OBJSERVDIR)
 	@$(call color_exec,$(COBJ_T),$(COBJ),"Object: $@",\
 		$(CC) $(WERROR) $(CFLAGS) $(OPTFLAGS) $(DEBUGFLAGS) $(CPPFLAGS) -o $@ -c $<)
 
-$(OBJDIR)/%.o: %.s
-	@mkdir -p $(OBJDIR)
+$(OBJCLIENTDIR)/%.o:  $(SRCCLIENTDIR)/%.cpp $(INCFILES)
+	@mkdir -p $(OBJCLIENTDIR)
 	@$(call color_exec,$(COBJ_T),$(COBJ),"Object: $@",\
-		$(NASM) -f macho64 -o $@ $<)
+		$(CXX) -std=$(CPPVERSION) $(WERROR) $(CFLAGS) $(OPTFLAGS) $(DEBUGFLAGS) $(CPPFLAGS) -o $@ -c $<)
+
+$(OBJCLIENTDIR)/%.o: $(SRCCLIENTDIR)/%.c $(INCFILES)
+	@mkdir -p $(OBJCLIENTDIR)
+	@$(call color_exec,$(COBJ_T),$(COBJ),"Object: $@",\
+		$(CC) $(WERROR) $(CFLAGS) $(OPTFLAGS) $(DEBUGFLAGS) $(CPPFLAGS) -o $@ -c $<)
 
 #	Removing objects
 clean:
 	@$(call color_exec,$(CCLEAN_T),$(CCLEAN),"Clean:",\
 		$(RM) $(OBJ))
-	@rm -rf $(OBJDIR)
+	@rm -rf $(OBJCLIENTDIR) $(OBJSERVDIR)
 
 #	Removing objects and exe
 fclean: clean
 	@$(call color_exec,$(CCLEAN_T),$(CCLEAN),"Fclean:",\
-		$(RM) $(NAME))
+		$(RM) $(SERVNAME) $(CLIENTNAME))
 
 #	All removing then compiling
 re: fclean all
@@ -214,15 +236,8 @@ f:	all run
 norme:
 	@norminette $(NORME) | sed "s/Norme/[38;5;$(CNORM_T)➤ [38;5;$(CNORM_OK)Norme/g;s/Warning/[0;$(CNORM_WARN)Warning/g;s/Error/[0;$(CNORM_ERR)Error/g"
 
-run: $(NAME)
-	@echo $(CRUN_T)"➤ "$(CRUN)"./$(NAME) ${ARGS}\033[0m"
-	@./$(NAME) ${ARGS}
-
 codesize:
 	@cat $(NORME) |grep -v '/\*' |wc -l
-
-functions: $(NAME)
-	@nm $(NAME) | grep U
 
 coffee:
 	@clear
