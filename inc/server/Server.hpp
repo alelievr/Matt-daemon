@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:09:04 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/08 16:24:49 by alelievr         ###   ########.fr       */
+/*   Updated: 2016/12/08 20:49:32 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <functional>
+#include <sys/select.h>
 
 #define MAX_CONNECTION_QUEUE 3
 
@@ -32,6 +33,8 @@ class		Server
 		std::function< void(const std::string &) >					_onClientDisconnected;
 
 		void	openSocket(const int port);
+		void	NewConnection(const int sock, fd_set *fds) const;
+		void	ReadFromClient(const int sock, fd_set *fds) const;
 
 	public:
 		Server(void);
@@ -40,6 +43,8 @@ class		Server
 		virtual ~Server(void);
 
 		Server &	operator=(Server const & src) = delete;
+
+		void	LoopUntilQuit(void);
 
 		void	setOnNewClientConnected(std::function< void(const std::string &) > tmp);
 		void	setOnClientRead(std::function< void(const std::string &, std::string &) > tmp);

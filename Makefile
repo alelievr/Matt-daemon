@@ -6,7 +6,7 @@
 #    By: alelievr <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/07/15 15:13:38 by alelievr          #+#    #+#              #
-#    Updated: 2016/12/08 17:04:27 by alelievr         ###   ########.fr        #
+#    Updated: 2016/12/08 20:27:47 by root             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,6 +17,7 @@
 #	Sources
 SRCSERVDIR	=	src/server
 SRCSERV		=	main.c				\
+				matt_daemon.cpp		\
 				Tintin_reporter.cpp	\
 				RSA.cpp				\
 				Server.cpp			\
