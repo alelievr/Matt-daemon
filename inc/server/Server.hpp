@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:09:04 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 01:33:18 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 03:04:14 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 #include <functional>
 #include <sys/select.h>
 #include <map>
+#include "RSA.hpp"
 #include "globals.h"
 
 typedef struct
@@ -41,10 +42,11 @@ class		Server
 		bool														_quit;
 		long														:24;
 		std::function< void(const std::string &, bool accepted) >	_onNewClientConnected;
-		std::function< void(const std::string &, std::string &) >	_onClientRead;
+		std::function< void(const std::string &, const int sock, std::string &) >	_onClientRead;
 		std::function< void(const std::string &) >					_onClientDisconnected;
 		//map with socket in key and ip as value.
 		std::map< int, Client >										_connectedClients;
+		RSA															_rsa;
 
 		void	openSocket(const int port);
 		void	NewConnection(const int sock, fd_set *fds);
@@ -59,9 +61,10 @@ class		Server
 		Server &	operator=(Server const & src) = delete;
 
 		void	LoopUntilQuit(void);
+		void	WriteToClient(int id, const std::string & message);
 
 		void	setOnNewClientConnected(std::function< void(const std::string &, bool accepted) > tmp);
-		void	setOnClientRead(std::function< void(const std::string &, std::string &) > tmp);
+		void	setOnClientRead(std::function< void(const std::string &, const int sock, std::string &) > tmp);
 		void	setOnClientDisconnected(std::function< void(const std::string &) > tmp);
 };
 

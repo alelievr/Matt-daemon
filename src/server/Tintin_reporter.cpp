@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:03:10 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 01:13:12 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 03:14:32 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,34 +19,36 @@ std::ofstream	*Tintin_reporter::_logStream = NULL;
 
 int		Tintin_reporter::Log(const std::string & message)
 {
-	return _InternalLog("LOG", message.c_str());
+	return _InternalLog("LOG", message);
 }
 
 int		Tintin_reporter::LogError(const std::string & message)
 {
-	return _InternalLog("ERROR", message.c_str());
+	return _InternalLog("ERROR", message);
 }
 
 int		Tintin_reporter::LogInfo(const std::string & message)
 {
-	return _InternalLog("INFO", message.c_str());
+	return _InternalLog("INFO", message);
 }
 
-int		Tintin_reporter::_InternalLog(const char *type, const char *message)
+int		Tintin_reporter::_InternalLog(const char *type, const std::string & message)
 {
 	char		buff[0xF00];
 	time_t		rawtime;
 	size_t		size;
 	struct tm	*timeinfo;
+	std::string	mes(message);
 
 	if (Tintin_reporter::_logStream == NULL)
 		return (-1);
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 	size = strftime(buff, sizeof(buff), "[%d/%m/%Y-%H:%M:%S] ", timeinfo);
+	std::replace(mes.begin(), mes.end(), '\n', '$');
 	(*Tintin_reporter::_logStream) << buff;
 	(*Tintin_reporter::_logStream) << std::string("[ ") + type + " ] ";
-	(*Tintin_reporter::_logStream) << message << std::endl;
+	(*Tintin_reporter::_logStream) << mes << std::endl;
 	return (0);
 }
 

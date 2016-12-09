@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 12:47:24 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 01:02:31 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 01:53:17 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,7 @@ static void	options(int ac, char **av)
 	int			c;
 	const char	*self = av[0];
 
-	while ((c = getopt(ac, av, "hb:")) != -1)
+	while ((c = getopt(ac, av, "hb")) != -1)
 		if (c == 'h')
 			help(self);
 		else if (c == 'b')

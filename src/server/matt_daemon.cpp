@@ -6,7 +6,7 @@
 /*   By: root <marvin@42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 20:27:56 by root              #+#    #+#             */
-/*   Updated: 2016/12/09 01:29:52 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 03:05:05 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,9 +42,10 @@ static void	work(void)
 			Tintin_reporter::LogInfo("Client disconnected: " + ip);
 		}
 	);
-	server.setOnClientRead([&](const std::string & ip, std::string & message) {
+	server.setOnClientRead([&](const std::string & ip, int sock, std::string & message) {
 			Tintin_reporter::Log("Client [" + ip + "]: " + message);
 			//transfert message to shell
+			server.WriteToClient(sock, message);
 		}
 	);
 

@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:01:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 01:12:57 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 03:11:38 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #define LOGFILE		"/var/log/matt_daemon/matt_daemon.log"
 
@@ -23,7 +24,7 @@ class		Tintin_reporter
 {
 	private:
 		static std::ofstream		*_logStream;
-		static int					_InternalLog(const char *type, const char *message);
+		static int					_InternalLog(const char *type, const std::string & message);
 
 	public:
 		Tintin_reporter(void) = delete;
