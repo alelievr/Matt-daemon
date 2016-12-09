@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:30:03 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 06:28:41 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 12:12:46 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,6 @@ static void	stdin_event(int server_socket, const RSA & rsa)
 	buff[ret] = 0;
 	message = std::string(buff);
 	rsa.Encode(message);
-	printf("write to server\n");
 	write(server_socket, message.c_str(), message.size());
 }
 

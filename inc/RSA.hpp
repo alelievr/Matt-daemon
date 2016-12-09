@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:34:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 06:30:03 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 11:27:30 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ class		RSA
 
 		int				GenerateKeys(const int p, const int q);
 		int				GetGCD(int a, int b) const;
+		int				ModInverse(int a, int m) const;
 
 	public:
 		RSA(void);
@@ -36,8 +37,8 @@ class		RSA
 
 		RSA &			operator=(RSA const & src) = delete;
 
-		std::string		Encode(std::string & message) const;
-		std::string		Decode(std::string & message) const;
+		std::string		Encode(const std::string & message) const;
+		std::string		Decode(const std::string & message) const;
 
 		std::string		GetPublicKey(void) const;
 		void			SetPublicKey(std::string k);

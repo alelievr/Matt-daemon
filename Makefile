@@ -6,7 +6,7 @@
 #    By: alelievr <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/07/15 15:13:38 by alelievr          #+#    #+#              #
-#    Updated: 2016/12/09 05:56:44 by root             ###   ########.fr        #
+#    Updated: 2016/12/09 11:43:57 by root             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -54,7 +54,7 @@ SERVNAME	=	Matt_daemon
 CLIENTNAME	=	Ben_AFK
 
 #	Compiler
-WERROR		=	-Werror
+WERROR		=	#-Werror
 CFLAGS		=	-Weverything -pedantic -ferror-limit=999
 CPROTECTION	=	-z execstack -fno-stack-protector
 

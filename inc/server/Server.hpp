@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:09:04 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 04:59:31 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 12:36:40 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,9 +29,13 @@ typedef struct
 	std::string	ip;
 	int			inPipe[2];	//shell pipe
 	int			outPipe[2];	//shell pipe
+	pid_t		shellPid;
+	int			:32;
 }				Client;
 
-#define		NEW_CLIENT(ip) Client{ip, {0, 0}, {0, 0}}
+#define		NEW_CLIENT(ip)	Client{ip, {0, 0}, {0, 0}, 0}
+#define		WRITE			0
+#define		READ			1
 
 class		Server
 {

@@ -1,9 +1,8 @@
 #include "RSA.hpp"
 
-
 RSA::RSA(void)
 {
-	GenerateKeys(11, 3);
+	GenerateKeys(17, 11);
 }
 
 RSA::~RSA(void)
@@ -24,73 +23,76 @@ int		RSA::GetGCD(int a, int b) const
 	return (b);
 }
 
+int		RSA::ModInverse(int a, int m) const
+{
+	a = a % m;
+	for (int x = 1; x < m; x++)
+		if ((a * x) % m == 1)
+			return x;
+	//never reached
+	return (-1);
+}
+
 int		RSA::GenerateKeys(const int p, const int q)
 {
 	int		n;
 	int		phi;
 	int		d;
-	float	t;
 	int		e = 3;
 
+	srand(static_cast< unsigned int >(clock()) + static_cast< unsigned int >(time(NULL)));
 	n = p * q;
 	phi = (p - 1) * (q - 1);
-	if (GetGCD(e, p - 1) != 1)
-		return -1;
-	if (GetGCD(e, q - 1) != 1)
-		return -1;
-	if (GetGCD(e, phi) != 1)
-		return -1;
 
-	d = -1;
-	while (42)
-	{
-		d++;
-		t = static_cast< float >(((e * d) - 1)) / static_cast< float >(phi);
-		if (fabs(t - static_cast< int >(t)) < std::numeric_limits< float >::epsilon())
-			break ;
-	}
-	std::cout << "d = " << d << std::endl;
+	d = ModInverse(e, phi);
+	//std::cout << "d = " << d << ", e = " << e << std::endl;
 	_publicKey = std::to_string(n) + " " + std::to_string(e);
 	_privateKey	= std::to_string(n) + " " + std::to_string(d);
-	std::cout << _publicKey << " | " << _privateKey << std::endl;
+	//std::cout << _publicKey << " | " << _privateKey << std::endl;
 
 	return (0);
 }
 
-std::string	RSA::Encode(std::string & message) const
+std::string		RSA::Encode(const std::string & message) const
 {
 	int			n;
 	int			e;
-	std::size_t	i = 0;
+	std::string	encoded = "";
 
 	std::stringstream(_publicKey) >> n >> e;
 
 	for (const char & m : message)
 	{
-		std::cout << "ascii: " << std::to_string(static_cast< int >(m)) << std::endl;
-		message[i++] = static_cast< char >(static_cast< long long >(pow(m, e)) % n);
-		std::cout << "encoded ascii: " << std::to_string(static_cast< int >(m)) << std::endl;
+	//	std::cout << std::to_string(static_cast< int >(m)) << " pow " << e << " mod " << n;
+	//	int	c = static_cast< int >(fmod(pow(m, e), n));
+		int c = m ^ 42;
+		encoded += std::to_string(c) + " ";
+	//	std::cout << " = " << c << std::endl;
 	}
-	std::cout << "encoded message: " << message;
-	Decode(message);
+	//std::cout << "encoded string: " << encoded << std::endl;
+	Decode(encoded);
 	return message;
 }
 
-std::string RSA::Decode(std::string & message) const
+std::string RSA::Decode(const std::string & message) const
 {
-	int			d;
-	int			n;
-	std::size_t	i = 0;
+	int					d;
+	int					n;
+	int					m;
+	std::string			decoded = "";
+	std::stringstream	keys = std::stringstream(message);
 
 	std::stringstream(_privateKey) >> n >> d;
 
-	for (const char & m : message)
+	while (keys >> m)
 	{
-		std::cout << "ascii: " << std::to_string(static_cast< int >(m)) << std::endl;
-		message[i++] = static_cast< char >(static_cast< long long >(pow(m, d)) % n);
-		std::cout << "decoded ascii: " << std::to_string(static_cast< int >(m)) << std::endl;
+	//	std::cout << "ascii: " << std::to_string(m) << " to ";
+	//	int c = static_cast< int >(fmod(pow(m, d), n));
+		int c = m ^ 42;
+	//	std::cout << c << std::endl;
+		decoded += static_cast< char >(c);
 	}
-	std::cout << "decoded messsage: " << message;
+	//std::cout << "decoded messsage: " << decoded;
 	(void)d;
 	(void)n;
 	return message;

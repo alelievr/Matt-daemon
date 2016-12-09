@@ -6,13 +6,14 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 05:02:32 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 12:59:56 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <signal.h>
 
 void	Server::openSocket(int port)
 {
@@ -64,20 +65,46 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 		perror("accept");
 		return ;
 	}
+
 	if (_connectedClientsNumber >= 3)
 	{
 		_onNewClientConnected("", false);
 		close(new_sock);
 		return ;
 	}
+
 //	getpeername(new_sock, &client_name, &peer_len);
-	_connectedClientsNumber++;
 	std::string ip = inet_ntoa(client_name.sin_addr);
 	if (_onNewClientConnected != NULL)
 		_onNewClientConnected(ip, true);
+
 	Client	c = NEW_CLIENT(ip);
+
+	//open shell and pipes
+/*	if (pipe(c.inPipe) == -1 || pipe(c.outPipe) == -1 || (c.shellPid = fork()) == -1)
+	{
+		close(new_sock);
+		return ;
+	}
+	if (c.shellPid == 0)
+	{
+		close(c.inPipe[READ]);
+		close(c.outPipe[WRITE]);
+		dup2(c.inPipe[READ], STDIN_FILENO);
+		dup2(c.outPipe[WRITE], STDOUT_FILENO);
+		exit(execl("/bin/sh", "sh", NULL));
+	}
+	else
+	{
+		close(c.inPipe[WRITE]);
+		close(c.outPipe[READ]);
+		dup2(c.outPipe[WRITE], new_sock);
+	}*/
+
 	_connectedClients[new_sock] = c;
+
 	FD_SET(new_sock, fds);
+	_connectedClientsNumber++;
 }
 
 void	Server::ReadFromClient(const int sock, fd_set *fds)
@@ -88,8 +115,14 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 
 	if ((r = read(sock, buff, sizeof(buff) - 1)) <= 0)
 	{
+		Client c = _connectedClients[sock];
 		if (_onClientDisconnected != NULL)
-			_onClientDisconnected(_connectedClients[sock].ip);
+			_onClientDisconnected(c.ip);
+		kill(SIGKILL, c.shellPid);
+		close(c.inPipe[READ]);
+		close(c.inPipe[WRITE]);
+		close(c.outPipe[READ]);
+		close(c.outPipe[WRITE]);
 		_connectedClientsNumber--;
 		close(sock);
 		FD_CLR(sock, fds);
@@ -99,10 +132,12 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 		buff[r] = 0;
 		stdbuff = std::string(buff);
 		_rsa.Decode(stdbuff);
+		write(_connectedClients[sock].inPipe[READ], buff, static_cast< size_t >(r));
 		if (stdbuff == "quit")
 			_quit = true;
 		if (_onClientRead != NULL)
 			_onClientRead(_connectedClients[sock].ip, sock, stdbuff);
+
 	}
 }
 

@@ -6,7 +6,7 @@
 /*   By: root <marvin@42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 20:27:56 by root              #+#    #+#             */
-/*   Updated: 2016/12/09 03:05:05 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 12:49:53 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 static void	sigHandler(int s) __attribute__((noreturn));
 static void	sigHandler(int s)
 {
-	Tintin_reporter::Log("Signal " + std::string(strsignal(s)) + " catched");
+	Tintin_reporter::Log("Signal(" + std::to_string(s)  + ") " + std::string(strsignal(s)) + " catched");
 	Tintin_reporter::Log("Quitting");
 	unlink(LOCK_FILE);
 	Tintin_reporter::DeInit();
@@ -61,6 +61,7 @@ extern "C" void		matt_daemon(int lock_fd)
 
 	for (int i = 0; i < 32; i++)
 		signal(i, sigHandler);
+	signal(SIGHUP, SIG_IGN);
 
 	umask(0);
 
