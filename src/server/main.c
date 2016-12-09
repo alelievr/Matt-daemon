@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 12:47:24 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/08 20:25:30 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 01:02:31 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ int			main(int ac, char **av)
 	if (daemon_pid == 0)
 		matt_daemon(lock_fd);
 	if (daemon_pid > 0)
-		printf("daemon started\n");
+		printf("daemon started on port 4242\n");
 	(void)ac;
 	return (0);
 }

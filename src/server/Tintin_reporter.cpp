@@ -6,32 +6,69 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:03:10 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/08 13:38:29 by alelievr         ###   ########.fr       */
+/*   Updated: 2016/12/09 01:13:12 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Tintin_reporter.hpp"
+#include <sys/stat.h>
+#include "globals.h"
+#include <string.h>
 
-Tintin_reporter::Tintin_reporter(void) : _logStream(NULL)
+std::ofstream	*Tintin_reporter::_logStream = NULL;
+
+int		Tintin_reporter::Log(const std::string & message)
 {
-	//open the logStream
-	std::cout << "Default constructor of Tintin_reporter called" << std::endl;
+	return _InternalLog("LOG", message.c_str());
 }
 
-Tintin_reporter::~Tintin_reporter(void)
+int		Tintin_reporter::LogError(const std::string & message)
 {
-	std::cout << "Destructor of Tintin_reporter called" << std::endl;
+	return _InternalLog("ERROR", message.c_str());
 }
 
-int		Tintin_reporter::writeToLog(const std::string & message) const
+int		Tintin_reporter::LogInfo(const std::string & message)
 {
-	(void)message;
+	return _InternalLog("INFO", message.c_str());
+}
+
+int		Tintin_reporter::_InternalLog(const char *type, const char *message)
+{
+	char		buff[0xF00];
+	time_t		rawtime;
+	size_t		size;
+	struct tm	*timeinfo;
+
+	if (Tintin_reporter::_logStream == NULL)
+		return (-1);
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	size = strftime(buff, sizeof(buff), "[%d/%m/%Y-%H:%M:%S] ", timeinfo);
+	(*Tintin_reporter::_logStream) << buff;
+	(*Tintin_reporter::_logStream) << std::string("[ ") + type + " ] ";
+	(*Tintin_reporter::_logStream) << message << std::endl;
 	return (0);
 }
 
-std::ostream &	operator<<(std::ostream & o, Tintin_reporter const & r)
+void		Tintin_reporter::Init(void)
 {
-	o << "tostring of the class" << std::endl;
-	(void)r;
-	return (o);
+	Tintin_reporter::_logStream = new std::ofstream;
+	struct stat		st;
+	stat(LOG_FILE_DIR, &st);
+	if (!S_ISDIR(st.st_mode))
+		mkdir(LOG_FILE_DIR, 0755);
+	Tintin_reporter::_logStream->open(LOG_FILE_DIR LOG_FILE_NAME);
+	if (errno != 0)
+	{
+		Tintin_reporter::_logStream->close();
+		Tintin_reporter::_logStream->open(LOG_FILE_DIR LOG_FILE_NAME);
+		if (errno != 0)
+			perror("open log file"), exit(-1);
+	}
+}
+
+void		Tintin_reporter::DeInit(void)
+{
+	Tintin_reporter::_logStream->close();
+	delete Tintin_reporter::_logStream;
 }

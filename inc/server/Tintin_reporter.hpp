@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:01:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/08 13:38:15 by alelievr         ###   ########.fr       */
+/*   Updated: 2016/12/09 01:12:57 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,16 +22,19 @@
 class		Tintin_reporter
 {
 	private:
-		std::ostream		_logStream;
+		static std::ofstream		*_logStream;
+		static int					_InternalLog(const char *type, const char *message);
 
 	public:
-		Tintin_reporter(void);
+		Tintin_reporter(void) = delete;
 		Tintin_reporter(const Tintin_reporter&) = delete;
-		virtual ~Tintin_reporter(void);
+		virtual ~Tintin_reporter(void) = delete;
 
 		Tintin_reporter &	operator=(Tintin_reporter const & src) = delete;
 
-		int					writeToLog(const std::string & message) const;
+		static int				Log(const std::string & message);
+		static int				LogInfo(const std::string & message);
+		static int				LogError(const std::string & message);
+		static void				Init(void);
+		static void				DeInit(void);
 };
-
-std::ostream &	operator<<(std::ostream & o, Tintin_reporter const & r);
