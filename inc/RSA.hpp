@@ -6,12 +6,13 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:34:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 02:49:02 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 06:30:03 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 #pragma clang diagnostic ignored "-Wc++98-compat"
+#pragma clang diagnostic ignored "-Wc++98-compat-pedantic"
 
 #include <iostream>
 #include <string>
@@ -35,8 +36,8 @@ class		RSA
 
 		RSA &			operator=(RSA const & src) = delete;
 
-		std::string		Encode(const std::string & message);
-		std::string		Decode(const std::string & message);
+		std::string		Encode(std::string & message) const;
+		std::string		Decode(std::string & message) const;
 
 		std::string		GetPublicKey(void) const;
 		void			SetPublicKey(std::string k);

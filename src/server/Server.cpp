@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 03:06:30 by root             ###   ########.fr       */
+/*   Updated: 2016/12/09 05:02:32 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,7 +97,8 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 	else
 	{
 		buff[r] = 0;
-		stdbuff = _rsa.Decode(buff);
+		stdbuff = std::string(buff);
+		_rsa.Decode(stdbuff);
 		if (stdbuff == "quit")
 			_quit = true;
 		if (_onClientRead != NULL)
@@ -105,10 +106,10 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 	}
 }
 
-void	Server::WriteToClient(const int sock, const std::string & message)
+void	Server::WriteToClient(const int sock, std::string & message)
 {
-	std::string		encoded = _rsa.Encode(message);
-	write(sock, encoded.c_str(), encoded.size());
+	_rsa.Encode(message);
+	write(sock, message.c_str(), message.size());
 }
 
 void	Server::LoopUntilQuit(void)

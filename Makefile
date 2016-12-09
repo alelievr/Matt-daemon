@@ -6,7 +6,7 @@
 #    By: alelievr <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/07/15 15:13:38 by alelievr          #+#    #+#              #
-#    Updated: 2016/12/08 20:27:47 by root             ###   ########.fr        #
+#    Updated: 2016/12/09 05:56:44 by root             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,15 +19,18 @@ SRCSERVDIR	=	src/server
 SRCSERV		=	main.c				\
 				matt_daemon.cpp		\
 				Tintin_reporter.cpp	\
-				RSA.cpp				\
 				Server.cpp			\
 
 SRCCLIENTDIR=	src/client
-SRCCLIENT	=	main.c				\
+SRCCLIENT	=	main.cpp			\
+
+SRCBOTHDIR	=	src/
+SRCBOTH		=	RSA.cpp
 
 #	Objects
 OBJCLIENTDIR=	obj/client
 OBJSERVDIR	=	obj/server
+OBJBOTHDIR	=	obj/
 
 #	Variables
 LIBFT		=	2	#1 or 0 to include the libft / 2 for autodetct
@@ -40,7 +43,7 @@ CPPVERSION	=	c++11
 #Example $> make DEBUG=2 will set debuglevel to 2
 
 #	Includes
-INCDIRS		=	inc/server inc/client
+INCDIRS		=	inc/server inc/client inc
 
 #	Libraries
 LIBDIRS		=	
@@ -113,9 +116,13 @@ SERVOBJS	=	$(patsubst %.c,%.o, $(filter %.c, $(SRCSERV))) \
 CLIENTOBJS	=	$(patsubst %.c,%.o, $(filter %.c, $(SRCCLIENT))) \
 				$(patsubst %.cpp,%.o, $(filter %.cpp, $(SRCCLIENT))) \
 				$(patsubst %.s,%.o, $(filter %.s, $(SRCCLIENT)))
+BOTHOBJS	=	$(patsubst %.c,%.o, $(filter %.c, $(SRCBOTH))) \
+				$(patsubst %.cpp,%.o, $(filter %.cpp, $(SRCBOTH))) \
+				$(patsubst %.s,%.o, $(filter %.s, $(SRCBOTH)))
 SERVOBJ		=	$(addprefix $(OBJSERVDIR)/,$(notdir $(SERVOBJS)))
 CLIENTOBJ	=	$(addprefix $(OBJCLIENTDIR)/,$(notdir $(CLIENTOBJS)))
-OBJS		=	$(SERVOBJ) $(CLIENTOBJ)
+BOTHOBJ		=	$(addprefix $(OBJBOTHDIR)/,$(notdir $(BOTHOBJS)))
+OBJS		=	$(SERVOBJ) $(CLIENTOBJ) $(BOTHOBJ)
 NORME		=	**/*.[ch]
 VPATH		+=	$(dir $(addprefix $(SRCDIR)/,$(SRC)))
 VFRAME		=	$(addprefix -framework ,$(FRAMEWORK))
@@ -188,11 +195,11 @@ client: $(CLIENTNAME)
 server: $(SERVNAME)
 
 #	Linking
-$(SERVNAME): $(SERVOBJ)
+$(SERVNAME): $(SERVOBJ) $(BOTHOBJ)
 	@$(call color_exec,$(CLINK_T),$(CLINK),"Link of $(SERVNAME):",\
 		$(LINKER) $(WERROR) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(OPTFLAGS) $(DEBUGFLAGS) $(LINKDEBUG) $(VFRAME) -o $@ $^)
 
-$(CLIENTNAME): $(CLIENTOBJ)
+$(CLIENTNAME): $(CLIENTOBJ) $(BOTHOBJ)
 	@$(call color_exec,$(CLINK_T),$(CLINK),"Link of $(CLIENTNAME):",\
 		$(LINKER) $(WERROR) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(OPTFLAGS) $(DEBUGFLAGS) $(LINKDEBUG) $(VFRAME) -o $@ $^)
 
@@ -213,15 +220,20 @@ $(OBJCLIENTDIR)/%.o:  $(SRCCLIENTDIR)/%.cpp $(INCFILES)
 		$(CXX) -std=$(CPPVERSION) $(WERROR) $(CFLAGS) $(OPTFLAGS) $(DEBUGFLAGS) $(CPPFLAGS) -o $@ -c $<)
 
 $(OBJCLIENTDIR)/%.o: $(SRCCLIENTDIR)/%.c $(INCFILES)
-	@mkdir -p $(OBJCLIENTDIR)
+	@mkdir -p $(OBJBOTHDIR)
 	@$(call color_exec,$(COBJ_T),$(COBJ),"Object: $@",\
 		$(CC) $(WERROR) $(CFLAGS) $(OPTFLAGS) $(DEBUGFLAGS) $(CPPFLAGS) -o $@ -c $<)
+
+$(OBJBOTHDIR)/%.o:  $(SRCBOTHDIR)/%.cpp $(INCFILES)
+	@mkdir -p $(OBJBOTHDIR)
+	@$(call color_exec,$(COBJ_T),$(COBJ),"Object: $@",\
+		$(CXX) -std=$(CPPVERSION) $(WERROR) $(CFLAGS) $(OPTFLAGS) $(DEBUGFLAGS) $(CPPFLAGS) -o $@ -c $<)
 
 #	Removing objects
 clean:
 	@$(call color_exec,$(CCLEAN_T),$(CCLEAN),"Clean:",\
 		$(RM) $(OBJ))
-	@rm -rf $(OBJCLIENTDIR) $(OBJSERVDIR)
+	@rm -rf $(OBJCLIENTDIR) $(OBJSERVDIR) $(OBJBOTHDIR)
 
 #	Removing objects and exe
 fclean: clean
