@@ -6,13 +6,14 @@
 /*   By: root <marvin@42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 20:27:56 by root              #+#    #+#             */
-/*   Updated: 2016/12/09 12:49:53 by root             ###   ########.fr       */
+/*   Updated: 2016/12/11 21:15:14 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <signal.h>
 #include <string.h>
 #include <string>
+#include <sys/wait.h>
 #include "matt_daemon.hpp"
 #include "Server.hpp"
 #include "Tintin_reporter.hpp"
@@ -44,8 +45,7 @@ static void	work(void)
 	);
 	server.setOnClientRead([&](const std::string & ip, int sock, std::string & message) {
 			Tintin_reporter::Log("Client [" + ip + "]: " + message);
-			//transfert message to shell
-			server.WriteToClient(sock, message);
+			(void)sock;
 		}
 	);
 
@@ -55,24 +55,20 @@ static void	work(void)
 
 extern "C" void		matt_daemon(int lock_fd)
 {
-	int		pid_fd = open(PID_FILE, O_WRONLY | O_CREAT, 0755);
-	int		pid;
+	int		pid_fd;
+	pid_t	pid;
 	Tintin_reporter::Init();
 
 	for (int i = 0; i < 32; i++)
 		signal(i, sigHandler);
-	signal(SIGHUP, SIG_IGN);
+	signal(SIGCHLD, SIG_IGN);
 
 	umask(0);
 
 	chdir("/");
 
-//	close(STDIN_FILENO);
-//	close(STDOUT_FILENO);
-//	close(STDERR_FILENO);
-
 	setsid();
-
+ 	pid_fd = open(PID_FILE, O_WRONLY | O_CREAT, 0755);
 	pid = getpid();
 	write(pid_fd, &pid, sizeof(int));
 	close(pid_fd);

@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 12:59:56 by root             ###   ########.fr       */
+/*   Updated: 2016/12/11 20:58:16 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <signal.h>
+#include <pty.h>
 
 void	Server::openSocket(int port)
 {
@@ -81,25 +82,36 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 	Client	c = NEW_CLIENT(ip);
 
 	//open shell and pipes
-/*	if (pipe(c.inPipe) == -1 || pipe(c.outPipe) == -1 || (c.shellPid = fork()) == -1)
+	if (pipe(c.inPipe) == -1
+			|| pipe(c.outPipe) == -1
+			|| pipe(c.errPipe) == -1
+			|| (c.shellPid = forkpty(&c.master, NULL, NULL, NULL)) == -1)
 	{
 		close(new_sock);
 		return ;
 	}
 	if (c.shellPid == 0)
 	{
-		close(c.inPipe[READ]);
-		close(c.outPipe[WRITE]);
+		dup2(STDOUT_FILENO, STDERR_FILENO);
+		close(c.inPipe[WRITE]);
 		dup2(c.inPipe[READ], STDIN_FILENO);
+		close(c.inPipe[READ]);
+		close(c.outPipe[READ]);
 		dup2(c.outPipe[WRITE], STDOUT_FILENO);
-		exit(execl("/bin/sh", "sh", NULL));
+		dup2(c.errPipe[WRITE], STDERR_FILENO);
+		close(c.outPipe[WRITE]);
+		exit(execl("/bin/bash", "bash", NULL));
 	}
 	else
 	{
-		close(c.inPipe[WRITE]);
-		close(c.outPipe[READ]);
-		dup2(c.outPipe[WRITE], new_sock);
-	}*/
+		close(c.inPipe[READ]);
+		close(c.outPipe[WRITE]);
+		close(c.errPipe[WRITE]);
+
+		//binding the shell standard output to the select
+		FD_SET(c.outPipe[READ], fds);
+		FD_SET(c.errPipe[READ], fds);
+	}
 
 	_connectedClients[new_sock] = c;
 
@@ -123,22 +135,45 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 		close(c.inPipe[WRITE]);
 		close(c.outPipe[READ]);
 		close(c.outPipe[WRITE]);
+		close(c.errPipe[READ]);
+		close(c.errPipe[WRITE]);
+		//close the client pty
+		close(c.master);
 		_connectedClientsNumber--;
 		close(sock);
 		FD_CLR(sock, fds);
+		FD_CLR(c.outPipe[READ], fds);
+		FD_CLR(c.errPipe[READ], fds);
 	}
 	else
 	{
 		buff[r] = 0;
 		stdbuff = std::string(buff);
 		_rsa.Decode(stdbuff);
-		write(_connectedClients[sock].inPipe[READ], buff, static_cast< size_t >(r));
+		Client c = _connectedClients[sock];
+		write(c.inPipe[WRITE], stdbuff.c_str(), static_cast< size_t >(r));
 		if (stdbuff == "quit")
 			_quit = true;
 		if (_onClientRead != NULL)
-			_onClientRead(_connectedClients[sock].ip, sock, stdbuff);
+			_onClientRead(c.ip, sock, stdbuff);
 
 	}
+}
+
+void	Server::ReadFromShell(const int shellStdout, const int clientSock, bool isStdout)
+{
+	char			buff[0xF000];
+	std::string		stdbuff;
+	long			r;
+
+	if ((r = read(shellStdout, buff, sizeof(buff) - 1)) == -1)
+	{
+		Tintin_reporter::LogError("can't read on shell's out pipe.");
+		return ;
+	}
+	buff[r] = 0;
+	stdbuff = std::to_string(static_cast< int >(isStdout)) + std::string(buff);
+	WriteToClient(clientSock, stdbuff);
 }
 
 void	Server::WriteToClient(const int sock, std::string & message)
@@ -163,7 +198,17 @@ void	Server::LoopUntilQuit(void)
 		for (int i = 0; i < FD_SETSIZE; i++)
 			if (FD_ISSET(i, &read_fds))
 			{
-				if (i == _socket)
+				bool	readedFromShell = false;
+
+				//check if to read fd is a shell stdout and if yes, send result to connected client
+				for (const auto & c : _connectedClients)
+					if (i == c.second.outPipe[READ])
+						ReadFromShell(i, c.first, true), readedFromShell = true;
+					else if (i == c.second.errPipe[READ])
+						ReadFromShell(i, c.first, false), readedFromShell = true;
+				if (readedFromShell)
+					;
+				else if (i == _socket)
 					NewConnection(i, &active_fds);
 				else
 					ReadFromClient(i, &active_fds);

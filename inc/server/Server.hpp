@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:09:04 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 12:36:40 by root             ###   ########.fr       */
+/*   Updated: 2016/12/11 20:56:38 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,20 +22,22 @@
 #include <sys/select.h>
 #include <map>
 #include "RSA.hpp"
+#include "Tintin_reporter.hpp"
 #include "globals.h"
 
 typedef struct
 {
 	std::string	ip;
-	int			inPipe[2];	//shell pipe
-	int			outPipe[2];	//shell pipe
+	int			inPipe[2];	//shell stdin pipe
+	int			outPipe[2];	//shell stdout pipe
+	int			errPipe[2];	//shell stderr pipe
 	pid_t		shellPid;
-	int			:32;
+	int			master;
 }				Client;
 
-#define		NEW_CLIENT(ip)	Client{ip, {0, 0}, {0, 0}, 0}
-#define		WRITE			0
-#define		READ			1
+#define		NEW_CLIENT(ip)	Client{ip, {0, 0}, {0, 0}, {0, 0}, 0, 0}
+#define		WRITE			1
+#define		READ			0
 
 class		Server
 {
@@ -55,6 +57,7 @@ class		Server
 		void	openSocket(const int port);
 		void	NewConnection(const int sock, fd_set *fds);
 		void	ReadFromClient(const int sock, fd_set *fds);
+		void	ReadFromShell(const int shellStdout, const int clientSock, bool isStdout);
 
 	public:
 		Server(void);

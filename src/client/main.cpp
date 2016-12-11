@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:30:03 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 12:12:46 by root             ###   ########.fr       */
+/*   Updated: 2016/12/11 21:10:04 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,12 +28,30 @@ static void	stdin_event(int server_socket, const RSA & rsa)
 	write(server_socket, message.c_str(), message.size());
 }
 
+static std::string	butify_remote(std::string & message)
+{
+	int			standardOut = true;
+	std::string	ret = "";
+
+	standardOut = static_cast< int >(message[0] - '0');
+	ret += (standardOut) ? STDOUT : STDERR;
+	message.erase(0, 1);
+	for (const char & c : message)
+	{
+		ret += c;
+		if (c == '\n')
+			ret += (standardOut) ? STDOUT : STDERR;
+	}
+	return ret;
+}
+
 static void server_event(int server_socket, const RSA & rsa)
 {
 	char		buff[0xF00];
 	long		ret;
 	std::string	message;
 
+	std::cout << "\033[D\033[D\033[D   \033[D\033[D\033[D";
 	if ((ret = read(server_socket, buff, sizeof(buff) -1 )) < 0)
 		close(server_socket), perror("read"), exit(-1);
 	if (ret == 0)
@@ -41,7 +59,8 @@ static void server_event(int server_socket, const RSA & rsa)
 	buff[ret] = 0;
 	message = std::string(buff);
 	rsa.Decode(message);
-	write(STDOUT_FILENO, message.c_str(), message.size());
+	message = butify_remote(message);
+	std::cout << message;
 }
 
 static void	client_io(int server_socket) __attribute__((noreturn));
@@ -58,6 +77,7 @@ static void	client_io(int server_socket)
 	while (42)
 	{
 		read_fds = active_fds;
+		std::cout << PROMPT << std::flush;
 		if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) < 0)
 			close(server_socket), perror("select"), exit(-1);
 		for (int i = 0; i < FD_SETSIZE; i++)

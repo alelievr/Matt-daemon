@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 12:47:24 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 01:53:17 by root             ###   ########.fr       */
+/*   Updated: 2016/12/11 21:17:49 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,9 +53,11 @@ static void	bonus(void)
 {
 	printf("- advanced error dispay and management\n");
 	printf("- remote shell\n");
+	printf("- network signals for remote shell\n");
 	printf("- custom client with prompt\n");
 	printf("- advanced logging\n");
-	printf("- custom RSA based communication encryption\n");
+	printf("- two side communication encryption\n");
+	printf("- custom public/private key based communication encryption\n");
 	exit(0);
 }
 
