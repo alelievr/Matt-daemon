@@ -6,7 +6,7 @@
 #    By: alelievr <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/07/15 15:13:38 by alelievr          #+#    #+#              #
-#    Updated: 2016/12/09 20:29:02 by root             ###   ########.fr        #
+#    Updated: 2016/12/12 00:49:20 by root             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -38,7 +38,7 @@ DEBUGLEVEL	=	0	#can be 0 for no debug 1 for or 2 for harder debug
 					#Warrning: non null debuglevel will disable optlevel
 OPTLEVEL	=	1	#same than debuglevel
 					#Warrning: non null optlevel will disable debuglevel
-CPPVERSION	=	c++11
+CPPVERSION	=	c++14
 #For simpler and faster use, use commnd line variables DEBUG and OPTI:
 #Example $> make DEBUG=2 will set debuglevel to 2
 

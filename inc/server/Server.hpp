@@ -6,24 +6,26 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:09:04 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/11 20:56:38 by root             ###   ########.fr       */
+/*   Updated: 2016/12/12 01:52:15 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 #pragma clang diagnostic ignored "-Wc++98-compat"
 
-#include <iostream>
-#include <string>
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <functional>
 #include <sys/select.h>
-#include <map>
+#include <string.h>
 #include "RSA.hpp"
 #include "Tintin_reporter.hpp"
 #include "globals.h"
+
+#include <map>
+#include <iostream>
+#include <string>
 
 typedef struct
 {

@@ -6,11 +6,13 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:30:03 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/11 21:10:04 by root             ###   ########.fr       */
+/*   Updated: 2016/12/12 02:00:41 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ben_afk.hpp"
+
+static int	currentServerSocket;
 
 static void	stdin_event(int server_socket, const RSA & rsa)
 {
@@ -24,7 +26,7 @@ static void	stdin_event(int server_socket, const RSA & rsa)
 		printf("stdin closed !\n"), exit(0);
 	buff[ret] = 0;
 	message = std::string(buff);
-	rsa.Encode(message);
+	message = rsa.Encode(message);
 	write(server_socket, message.c_str(), message.size());
 }
 
@@ -58,7 +60,7 @@ static void server_event(int server_socket, const RSA & rsa)
 		printf("server closed the connection !\n"), exit(0);
 	buff[ret] = 0;
 	message = std::string(buff);
-	rsa.Decode(message);
+	message = rsa.Decode(message);
 	message = butify_remote(message);
 	std::cout << message;
 }
@@ -79,7 +81,11 @@ static void	client_io(int server_socket)
 		read_fds = active_fds;
 		std::cout << PROMPT << std::flush;
 		if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) < 0)
+		{
+			if (errno == 4)
+				continue;
 			close(server_socket), perror("select"), exit(-1);
+		}
 		for (int i = 0; i < FD_SETSIZE; i++)
 			if (FD_ISSET(i, &read_fds))
 			{
@@ -112,7 +118,19 @@ static int	connect_socket(int port, char *ip)
 		perror("setsockopt"), exit(-1);
 	if (connect(sock, reinterpret_cast< struct sockaddr *>(&connection), sizeof(connection)) < 0)
 		perror("bind"), exit(-1);
+	currentServerSocket = sock;
 	return sock;
+}
+
+static void	sigHandler(int s)
+{
+	RSA				rsa;
+	std::string		sigMessage;
+
+	std::cout << "sedning signal to server !" << std::endl;
+	sigMessage = "\x80" + std::to_string(s);
+	sigMessage = rsa.Encode(sigMessage);
+	write(currentServerSocket, sigMessage.c_str(), sigMessage.size());
 }
 
 static void	usage(char *name) __attribute((noreturn));
@@ -136,5 +154,7 @@ int			main(int ac, char **av)
 		usage(av[0]);
 	if ((server_socket = connect_socket(port, ip)) == -1)
 		return (-1);
+	signal(SIGINT, sigHandler);
+	signal(SIGQUIT, sigHandler);
 	client_io(server_socket);
 }

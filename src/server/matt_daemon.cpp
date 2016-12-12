@@ -6,7 +6,7 @@
 /*   By: root <marvin@42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 20:27:56 by root              #+#    #+#             */
-/*   Updated: 2016/12/11 21:15:14 by root             ###   ########.fr       */
+/*   Updated: 2016/12/12 02:03:46 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,8 +21,8 @@
 static void	sigHandler(int s) __attribute__((noreturn));
 static void	sigHandler(int s)
 {
-	Tintin_reporter::Log("Signal(" + std::to_string(s)  + ") " + std::string(strsignal(s)) + " catched");
-	Tintin_reporter::Log("Quitting");
+	Tintin_reporter::LogInfo("Signal(" + std::to_string(s)  + ") " + std::string(strsignal(s)) + " catched");
+	Tintin_reporter::LogInfo("Quitting");
 	unlink(LOCK_FILE);
 	Tintin_reporter::DeInit();
 	exit(0);
@@ -31,6 +31,7 @@ static void	sigHandler(int s)
 static void	work(void)
 {
 	Server				server;
+	Tintin_reporter::LogInfo("Starting is now listening on port 4242");
 
 	server.setOnNewClientConnected([&](const std::string & ip, bool accepted) {
 			if (accepted)
@@ -49,7 +50,6 @@ static void	work(void)
 		}
 	);
 
-	Tintin_reporter::Log("Starting daemon at pid " + std::to_string(getpid()));
 	server.LoopUntilQuit();
 }
 
@@ -68,6 +68,7 @@ extern "C" void		matt_daemon(int lock_fd)
 	chdir("/");
 
 	setsid();
+	Tintin_reporter::LogInfo("Starting daemon at pid " + std::to_string(getpid()));
  	pid_fd = open(PID_FILE, O_WRONLY | O_CREAT, 0755);
 	pid = getpid();
 	write(pid_fd, &pid, sizeof(int));
@@ -75,7 +76,7 @@ extern "C" void		matt_daemon(int lock_fd)
 
 	work();
 
-	Tintin_reporter::Log("Quitting");
+	Tintin_reporter::LogInfo("Quitting");
 	flock(lock_fd, LOCK_UN);
 	close(lock_fd);
 	Tintin_reporter::DeInit();

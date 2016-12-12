@@ -1,4 +1,5 @@
 #include "RSA.hpp"
+#define KEY 0b01010101
 
 RSA::RSA(void)
 {
@@ -7,7 +8,6 @@ RSA::RSA(void)
 
 RSA::~RSA(void)
 {
-	std::cout << "Destructor of RSA called" << std::endl;
 }
 
 int		RSA::GetGCD(int a, int b) const
@@ -42,13 +42,11 @@ int		RSA::GenerateKeys(const int p, const int q)
 
 	srand(static_cast< unsigned int >(clock()) + static_cast< unsigned int >(time(NULL)));
 	n = p * q;
-	phi = (p - 1) * (q - 1);
+	phi = n - (p + q - 1);
 
 	d = ModInverse(e, phi);
-	//std::cout << "d = " << d << ", e = " << e << std::endl;
 	_publicKey = std::to_string(n) + " " + std::to_string(e);
 	_privateKey	= std::to_string(n) + " " + std::to_string(d);
-	//std::cout << _publicKey << " | " << _privateKey << std::endl;
 
 	return (0);
 }
@@ -63,15 +61,12 @@ std::string		RSA::Encode(const std::string & message) const
 
 	for (const char & m : message)
 	{
-	//	std::cout << std::to_string(static_cast< int >(m)) << " pow " << e << " mod " << n;
-	//	int	c = static_cast< int >(fmod(pow(m, e), n));
-		int c = m ^ 42;
+		//int	c = static_cast< int >(fmod(pow(m, e), n));
+		int c = m ^ KEY;
 		encoded += std::to_string(c) + " ";
-	//	std::cout << " = " << c << std::endl;
 	}
 	//std::cout << "encoded string: " << encoded << std::endl;
-	Decode(encoded);
-	return message;
+	return encoded;
 }
 
 std::string RSA::Decode(const std::string & message) const
@@ -86,16 +81,14 @@ std::string RSA::Decode(const std::string & message) const
 
 	while (keys >> m)
 	{
-	//	std::cout << "ascii: " << std::to_string(m) << " to ";
-	//	int c = static_cast< int >(fmod(pow(m, d), n));
-		int c = m ^ 42;
-	//	std::cout << c << std::endl;
+		//int c = static_cast< int >(fmod(pow(m, d), n));
+		int c = m ^ KEY;
 		decoded += static_cast< char >(c);
 	}
 	//std::cout << "decoded messsage: " << decoded;
 	(void)d;
 	(void)n;
-	return message;
+	return decoded;
 }
 
 std::string	RSA::GetPublicKey(void) const { return _publicKey; }

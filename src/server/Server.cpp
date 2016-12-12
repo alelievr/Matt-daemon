@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/11 20:58:16 by root             ###   ########.fr       */
+/*   Updated: 2016/12/12 02:05:54 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,14 +149,26 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 	{
 		buff[r] = 0;
 		stdbuff = std::string(buff);
-		_rsa.Decode(stdbuff);
-		Client c = _connectedClients[sock];
-		write(c.inPipe[WRITE], stdbuff.c_str(), static_cast< size_t >(r));
-		if (stdbuff == "quit")
+		stdbuff = _rsa.Decode(stdbuff);
+		if (stdbuff == "quit" || stdbuff == "quit\n")
+		{
 			_quit = true;
-		if (_onClientRead != NULL)
-			_onClientRead(c.ip, sock, stdbuff);
-
+			return ;
+		}
+		Client c = _connectedClients[sock];
+		if (stdbuff[0] == static_cast< char >('\x80'))
+		{
+			stdbuff.erase(0, 1);
+			int sig = std::stoi(stdbuff);
+			kill(c.shellPid, sig);
+			Tintin_reporter::LogInfo("client [" + c.ip + "] has sent a signal to remote shell: \"" + strsignal(sig) + "\"");
+		}
+		else
+		{
+ 		   	if (_onClientRead != NULL)
+				_onClientRead(c.ip, sock, stdbuff);
+			write(c.inPipe[WRITE], stdbuff.c_str(), stdbuff.size());
+		}
 	}
 }
 
@@ -178,7 +190,7 @@ void	Server::ReadFromShell(const int shellStdout, const int clientSock, bool isS
 
 void	Server::WriteToClient(const int sock, std::string & message)
 {
-	_rsa.Encode(message);
+	message = _rsa.Encode(message);
 	write(sock, message.c_str(), message.size());
 }
 

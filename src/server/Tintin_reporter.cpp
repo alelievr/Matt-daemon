@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:03:10 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/09 04:52:26 by root             ###   ########.fr       */
+/*   Updated: 2016/12/12 01:05:04 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,11 +59,11 @@ void		Tintin_reporter::Init(void)
 	stat(LOG_FILE_DIR, &st);
 	if (!S_ISDIR(st.st_mode))
 		mkdir(LOG_FILE_DIR, 0755);
-	Tintin_reporter::_logStream->open(LOG_FILE_DIR LOG_FILE_NAME);
+	Tintin_reporter::_logStream->open(LOG_FILE_DIR LOG_FILE_NAME, std::fstream::in | std::fstream::app);
 	if (errno != 0)
 	{
 		Tintin_reporter::_logStream->close();
-		Tintin_reporter::_logStream->open(LOG_FILE_DIR LOG_FILE_NAME);
+		Tintin_reporter::_logStream->open(LOG_FILE_DIR LOG_FILE_NAME, std::fstream::in | std::fstream::app);
 		if (errno != 0)
 			perror("open log file"), exit(-1);
 	}
