@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 02:09:02 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 14:19:07 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,18 +38,24 @@ void	Server::openSocket(int port)
 		perror("listen"), exit(-1);
 }
 
-Server::Server(void) : _connectedClientsNumber(0), _quit(false)
+Server::Server(void) : Server(4242)
 {
-	_port = 4242;
-	openSocket(_port);
 }
 
-Server::Server(int p) : _port(p), _connectedClientsNumber(0), _quit(false)
+Server::Server(int p) : Server(p, NULL, NULL)
 {
-	std::cout << "Default constructor of Server called" << std::endl;
-	this->_onNewClientConnected = NULL;
-	this->_onClientRead = NULL;
-	this->_onClientDisconnected = NULL;
+}
+
+Server::Server(int p, struct termios *term, struct winsize *win) :
+	_port(p),
+	_connectedClientsNumber(0),
+	_quit(false),
+	_onNewClientConnected(NULL),
+	_onClientRead(NULL),
+	_onClientDisconnected(NULL),
+	_window(win),
+	_terminal(term)
+{
 	openSocket(_port);
 }
 
@@ -82,36 +88,15 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 	Client	c = NEW_CLIENT(ip);
 
 	//open shell and pipes
-	if (pipe(c.inPipe) == -1
-			|| pipe(c.outPipe) == -1
-			|| pipe(c.errPipe) == -1
-			|| (c.shellPid = forkpty(&c.master, NULL, NULL, NULL)) == -1)
+	if ((c.shellPid = forkpty(&c.master, NULL, _terminal, _window)) == -1)
 	{
 		close(new_sock);
 		return ;
 	}
 	if (c.shellPid == 0)
-	{
-		dup2(STDOUT_FILENO, STDERR_FILENO);
-		close(c.inPipe[WRITE]);
-		dup2(c.inPipe[READ], STDIN_FILENO);
-		close(c.inPipe[READ]);
-		close(c.outPipe[READ]);
-		dup2(c.outPipe[WRITE], STDOUT_FILENO);
-		dup2(c.errPipe[WRITE], STDERR_FILENO);
-		close(c.outPipe[WRITE]);
 		exit(execl("/bin/bash", "bash", NULL));
-	}
-	else
-	{
-		close(c.inPipe[READ]);
-		close(c.outPipe[WRITE]);
-		close(c.errPipe[WRITE]);
 
-		//binding the shell standard output to the select
-		FD_SET(c.outPipe[READ], fds);
-		FD_SET(c.errPipe[READ], fds);
-	}
+	FD_SET(c.master, fds);
 
 	_connectedClients[new_sock] = c;
 
@@ -119,31 +104,33 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 	_connectedClientsNumber++;
 }
 
+void	Server::DisconnectClient(const int sock, fd_set *fds)
+{
+	Client c = _connectedClients[sock];
+	if (_onClientDisconnected != NULL)
+		_onClientDisconnected(c.ip);
+	kill(SIGKILL, c.shellPid);
+
+	//close the client pty
+	close(c.master);
+
+	_connectedClientsNumber--;
+
+	//close and remove client socket
+	close(sock);
+	FD_CLR(sock, fds);
+	FD_CLR(c.master, fds);
+}
+
 void	Server::ReadFromClient(const int sock, fd_set *fds)
 {
 	std::string			stdbuff;
 	long				r;
+	static char			cmd[0xF00];
+	static int			cmdIndex = 0;
 
 	if ((stdbuff = _rsa.DecodeRead(sock, &r)).empty())
-	{
-		Client c = _connectedClients[sock];
-		if (_onClientDisconnected != NULL)
-			_onClientDisconnected(c.ip);
-		kill(SIGKILL, c.shellPid);
-		close(c.inPipe[READ]);
-		close(c.inPipe[WRITE]);
-		close(c.outPipe[READ]);
-		close(c.outPipe[WRITE]);
-		close(c.errPipe[READ]);
-		close(c.errPipe[WRITE]);
-		//close the client pty
-		close(c.master);
-		_connectedClientsNumber--;
-		close(sock);
-		FD_CLR(sock, fds);
-		FD_CLR(c.outPipe[READ], fds);
-		FD_CLR(c.errPipe[READ], fds);
-	}
+		DisconnectClient(sock, fds);
 	else
 	{
 		if (stdbuff == "quit" || stdbuff == "quit\n")
@@ -156,36 +143,49 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 		{
 			stdbuff.erase(0, 1);
 			int sig = std::stoi(stdbuff);
-//			kill(c.shellPid, sig);
+			killpg(getpgid(c.shellPid), sig);
 			Tintin_reporter::LogInfo("client [" + c.ip + "] has sent a signal to remote shell: \"" + strsignal(sig) + "\"");
 		}
 		else
 		{
  		   	if (_onClientRead != NULL)
 				_onClientRead(c.ip, sock, stdbuff);
-			write(c.inPipe[WRITE], stdbuff.c_str(), stdbuff.size());
+			write(c.master, stdbuff.c_str(), stdbuff.size());
 		}
 	}
 }
 
-void	Server::ReadFromShell(const int shellStdout, const int clientSock, bool isStdout)
+void	Server::ReadFromShell(const int shellTTY, const int clientSock, fd_set *fds)
 {
 	char			buff[0xF000];
 	std::string		stdbuff;
 	long			r;
 
-	if ((r = read(shellStdout, buff, sizeof(buff) - 1)) == -1)
+	Client c = _connectedClients[clientSock];
+	if ((r = read(shellTTY, buff, sizeof(buff) - 1)) == -1)
 	{
-		Tintin_reporter::LogError("can't read on shell's out pipe.");
+		Tintin_reporter::LogError("client [" + c.ip + "]: can't read on shell's master TTY, disconnecting client");
+		DisconnectClient(clientSock, fds);
 		return ;
 	}
-	buff[r] = 0;
-	stdbuff = std::to_string(static_cast< int >(isStdout)) + std::string(buff);
-	WriteToClient(clientSock, stdbuff);
+	if (r > 0)
+	{
+		buff[r] = 0;
+		stdbuff = std::string(buff);
+		Tintin_reporter::Log("client [" + c.ip + "]: shell result: " + stdbuff);
+		WriteToClient(clientSock, stdbuff);
+	}
+	else
+	{
+		Tintin_reporter::LogInfo("client [" + c.ip + "]: shell's master TTY closed, disconnecting client");
+		DisconnectClient(clientSock, fds);
+	}
 }
 
 void	Server::WriteToClient(const int sock, std::string & message)
 {
+	if (message.size() == 0)
+		return ;
 	_rsa.EncodeWrite(sock, message);
 }
 
@@ -200,7 +200,7 @@ void	Server::LoopUntilQuit(void)
 	{
 		read_fds = active_fds;
 		if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) < 0)
-			perror("select"), exit(-1);
+			Tintin_reporter::LogError(std::string("select: ") + strerror(errno)), raise(SIGQUIT);
 
 		for (int i = 0; i < FD_SETSIZE; i++)
 			if (FD_ISSET(i, &read_fds))
@@ -209,10 +209,8 @@ void	Server::LoopUntilQuit(void)
 
 				//check if to read fd is a shell stdout and if yes, send result to connected client
 				for (const auto & c : _connectedClients)
-					if (i == c.second.outPipe[READ])
-						ReadFromShell(i, c.first, true), readedFromShell = true;
-					else if (i == c.second.errPipe[READ])
-						ReadFromShell(i, c.first, false), readedFromShell = true;
+					if (i == c.second.master)
+						ReadFromShell(i, c.first, &active_fds), readedFromShell = true;
 				if (readedFromShell)
 					;
 				else if (i == _socket)

@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:30:03 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 00:20:45 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 14:16:40 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,29 +21,13 @@ static void	stdin_event(int server_socket, const RSA & rsa)
 	std::string	message;
 
 	if ((ret = read(STDIN_FILENO, buff, sizeof(buff) -1 )) < 0)
-		close(server_socket), perror("read"), exit(-1);
+		close(server_socket), exit(-1);
+	write(STDOUT_FILENO, buff, static_cast< size_t >(ret));
 	if (ret == 0)
-		printf("stdin closed !\n"), exit(0);
+		printf("quitting client ...\n"), exit(0);
 	buff[ret] = 0;
 	message = std::string(buff);
 	rsa.EncodeWrite(server_socket, message);
-}
-
-static std::string	butify_remote(std::string & message)
-{
-	int			standardOut = true;
-	std::string	ret = "";
-
-	standardOut = static_cast< int >(message[0] - '0');
-	ret += (standardOut) ? STDOUT : STDERR;
-	message.erase(0, 1);
-	for (const char & c : message)
-	{
-		ret += c;
-		if (c == '\n')
-			ret += (standardOut) ? STDOUT : STDERR;
-	}
-	return ret;
 }
 
 static void server_event(int server_socket, const RSA & rsa)
@@ -51,13 +35,11 @@ static void server_event(int server_socket, const RSA & rsa)
 	long		ret;
 	std::string	message;
 
-	std::cout << "\033[D\033[D\033[D   \033[D\033[D\033[D";
 	if ((message = rsa.DecodeRead(server_socket, &ret)).empty())
 		close(server_socket), perror("read"), exit(-1);
 	if (ret == 0)
 		printf("server closed the connection !\n"), exit(0);
-	message = butify_remote(message);
-	std::cout << message;
+	std::cout << message << std::flush;
 }
 
 static void	client_io(int server_socket) __attribute__((noreturn));
@@ -74,7 +56,6 @@ static void	client_io(int server_socket)
 	while (42)
 	{
 		read_fds = active_fds;
-		std::cout << PROMPT << std::flush;
 		if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) < 0)
 		{
 			if (errno == 4)
@@ -98,13 +79,17 @@ static int	connect_socket(int port, char *ip)
 {
 	struct sockaddr_in		connection;
 	struct protoent			*proto;
+	struct pollfd			connecting_sock[1];
 	const int				yes = 1;
 	int						sock;
+	int						ok;
+	int						size = sizeof(int);
 
 	if ((proto = getprotobyname("tcp")) < 0)
 		perror("getprotobyname"), exit(-1);
 	if ((sock = socket(PF_INET, SOCK_STREAM, proto->p_proto)) < 0)
 		perror("socket"), exit(-1);
+	fcntl(sock, F_SETFL, O_NONBLOCK);
 	connection.sin_family = AF_INET;
 	connection.sin_port = htons(port);
 	if (inet_pton(AF_INET, ip, &connection.sin_addr) < 0)
@@ -112,9 +97,36 @@ static int	connect_socket(int port, char *ip)
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) < 0)
 		perror("setsockopt"), exit(-1);
 	if (connect(sock, reinterpret_cast< struct sockaddr *>(&connection), sizeof(connection)) < 0)
-		perror("bind"), exit(-1);
+	{
+		if (errno == EINPROGRESS)
+		{
+			//waiting to connect
+			connecting_sock[0].fd = sock;
+			connecting_sock[0].events = POLLIN;
+			poll(connecting_sock, 1, -1);
+
+			//checking the connection
+			getsockopt(sock, SOL_SOCKET, SO_ERROR, &ok, reinterpret_cast< socklen_t * >(&size));
+			if (ok)
+				std::cout << "async connect failed with code: " << ok << std::endl, exit(-1);
+		}
+		else
+			perror("connect"), exit(-1);
+	}
 	currentServerSocket = sock;
 	return sock;
+}
+
+static void setup_terminal(void)
+{
+	struct termios	term;
+
+	tcgetattr(STDIN_FILENO, &term);
+	term.c_cc[VMIN] = 0;
+	term.c_cc[VTIME] = 0;
+	term.c_lflag &= static_cast< unsigned int >(~ICANON);
+	term.c_lflag &= static_cast< unsigned int >(~ECHO);
+	tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
 }
 
 static void	sigHandler(int s)
@@ -122,7 +134,6 @@ static void	sigHandler(int s)
 	RSA				rsa;
 	std::string		sigMessage;
 
-	std::cout << "sedning signal to server !" << std::endl;
 	sigMessage = "\x80" + std::to_string(s);
 	rsa.EncodeWrite(currentServerSocket, sigMessage);
 }
@@ -150,5 +161,6 @@ int			main(int ac, char **av)
 		return (-1);
 	signal(SIGINT, sigHandler);
 	signal(SIGQUIT, sigHandler);
+	setup_terminal();
 	client_io(server_socket);
 }

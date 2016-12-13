@@ -6,7 +6,7 @@
 /*   By: root <marvin@42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 20:27:56 by root              #+#    #+#             */
-/*   Updated: 2016/12/12 02:03:46 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 04:11:59 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@
 #include "matt_daemon.hpp"
 #include "Server.hpp"
 #include "Tintin_reporter.hpp"
+#include <termios.h>
+#include <sys/ioctl.h>
 
 static void	sigHandler(int s) __attribute__((noreturn));
 static void	sigHandler(int s)
@@ -30,7 +32,12 @@ static void	sigHandler(int s)
 
 static void	work(void)
 {
-	Server				server;
+	struct termios term;
+	struct winsize win;
+
+	ioctl(STDIN_FILENO, TCGETS, &term);
+	ioctl(STDIN_FILENO, TIOCGWINSZ, &win);
+	Server				server(4242, &term, &win);
 	Tintin_reporter::LogInfo("Starting is now listening on port 4242");
 
 	server.setOnNewClientConnected([&](const std::string & ip, bool accepted) {
