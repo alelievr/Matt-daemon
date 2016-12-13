@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/12 02:05:54 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 02:09:02 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -121,11 +121,10 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 
 void	Server::ReadFromClient(const int sock, fd_set *fds)
 {
-	char				buff[0xF00];
 	std::string			stdbuff;
 	long				r;
 
-	if ((r = read(sock, buff, sizeof(buff) - 1)) <= 0)
+	if ((stdbuff = _rsa.DecodeRead(sock, &r)).empty())
 	{
 		Client c = _connectedClients[sock];
 		if (_onClientDisconnected != NULL)
@@ -147,9 +146,6 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 	}
 	else
 	{
-		buff[r] = 0;
-		stdbuff = std::string(buff);
-		stdbuff = _rsa.Decode(stdbuff);
 		if (stdbuff == "quit" || stdbuff == "quit\n")
 		{
 			_quit = true;
@@ -160,7 +156,7 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 		{
 			stdbuff.erase(0, 1);
 			int sig = std::stoi(stdbuff);
-			kill(c.shellPid, sig);
+//			kill(c.shellPid, sig);
 			Tintin_reporter::LogInfo("client [" + c.ip + "] has sent a signal to remote shell: \"" + strsignal(sig) + "\"");
 		}
 		else
@@ -190,8 +186,7 @@ void	Server::ReadFromShell(const int shellStdout, const int clientSock, bool isS
 
 void	Server::WriteToClient(const int sock, std::string & message)
 {
-	message = _rsa.Encode(message);
-	write(sock, message.c_str(), message.size());
+	_rsa.EncodeWrite(sock, message);
 }
 
 void	Server::LoopUntilQuit(void)

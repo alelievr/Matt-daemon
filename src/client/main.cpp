@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:30:03 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/12 02:00:41 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 00:20:45 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,8 +26,7 @@ static void	stdin_event(int server_socket, const RSA & rsa)
 		printf("stdin closed !\n"), exit(0);
 	buff[ret] = 0;
 	message = std::string(buff);
-	message = rsa.Encode(message);
-	write(server_socket, message.c_str(), message.size());
+	rsa.EncodeWrite(server_socket, message);
 }
 
 static std::string	butify_remote(std::string & message)
@@ -49,18 +48,14 @@ static std::string	butify_remote(std::string & message)
 
 static void server_event(int server_socket, const RSA & rsa)
 {
-	char		buff[0xF00];
 	long		ret;
 	std::string	message;
 
 	std::cout << "\033[D\033[D\033[D   \033[D\033[D\033[D";
-	if ((ret = read(server_socket, buff, sizeof(buff) -1 )) < 0)
+	if ((message = rsa.DecodeRead(server_socket, &ret)).empty())
 		close(server_socket), perror("read"), exit(-1);
 	if (ret == 0)
 		printf("server closed the connection !\n"), exit(0);
-	buff[ret] = 0;
-	message = std::string(buff);
-	message = rsa.Decode(message);
 	message = butify_remote(message);
 	std::cout << message;
 }
@@ -129,8 +124,7 @@ static void	sigHandler(int s)
 
 	std::cout << "sedning signal to server !" << std::endl;
 	sigMessage = "\x80" + std::to_string(s);
-	sigMessage = rsa.Encode(sigMessage);
-	write(currentServerSocket, sigMessage.c_str(), sigMessage.size());
+	rsa.EncodeWrite(currentServerSocket, sigMessage);
 }
 
 static void	usage(char *name) __attribute((noreturn));

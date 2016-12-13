@@ -6,7 +6,7 @@
 #    By: alelievr <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/07/15 15:13:38 by alelievr          #+#    #+#              #
-#    Updated: 2016/12/12 00:49:20 by root             ###   ########.fr        #
+#    Updated: 2016/12/12 20:43:52 by root             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -47,7 +47,7 @@ INCDIRS		=	inc/server inc/client inc
 
 #	Libraries
 LIBDIRS		=	
-LDLIBS		=	-lutil
+LDLIBS		=	-lutil -lgmp
 
 #	Output
 SERVNAME	=	Matt_daemon
@@ -58,7 +58,7 @@ WERROR		=	#-Werror
 CFLAGS		=	-Weverything -pedantic -ferror-limit=999
 CPROTECTION	=	-z execstack -fno-stack-protector
 
-DEBUGFLAGS1	=	-ggdb -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0
+DEBUGFLAGS1	=	-fsanitize=address -ggdb -O0 -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
 DEBUGFLAGS2	=	-fsanitize-memory-track-origins=2
 OPTFLAGS1	=	-funroll-loops -O2
 OPTFLAGS2	=	-pipe -funroll-loops -Ofast
@@ -100,7 +100,7 @@ ifeq "$(OS)" "Windows_NT"
 endif
 ifeq "$(OS)" "Linux"
 	LDLIBS		+= ""
-	DEBUGFLAGS	+= -fsanitize=memory -fsanitize-memory-use-after-dtor -fsanitize=thread
+	DEBUGFLAGS	+= #-fsanitize=memory# -fsanitize-memory-use-after-dtor# -fsanitize=thread
 endif
 ifeq "$(OS)" "Darwin"
 endif
