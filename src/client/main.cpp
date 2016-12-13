@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:30:03 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 15:04:12 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 19:50:50 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 static int	currentServerSocket;
 
-static void	stdin_event(int server_socket, const RSA & rsa)
+static void	stdin_event(int server_socket)
 {
 	char		buff[0xF00];
 	long		ret;
@@ -31,15 +31,15 @@ static void	stdin_event(int server_socket, const RSA & rsa)
 		printf("quitting client ...\n"), exit(0);
 	buff[ret] = 0;
 	message = std::string(buff);
-	rsa.EncodeWrite(server_socket, message);
+	RSAEncrypt::WriteTo(server_socket, message);
 }
 
-static void server_event(int server_socket, const RSA & rsa)
+static void server_event(int server_socket)
 {
 	long		ret;
 	std::string	message;
 
-	if ((message = rsa.DecodeRead(server_socket, &ret)).empty())
+	if ((message = RSAEncrypt::ReadOn(server_socket, &ret)).empty())
 		close(server_socket), puts("closing connection ..."), exit(-1);
 	if (ret == 0)
 		printf("server closed the connection !\n"), exit(0);
@@ -51,7 +51,6 @@ static void	client_io(int server_socket)
 {
 	fd_set		read_fds;
 	fd_set		active_fds;
-	RSA			rsa;
 
 	FD_ZERO(&read_fds);
 	FD_SET(STDIN_FILENO, &read_fds);
@@ -70,9 +69,9 @@ static void	client_io(int server_socket)
 			if (FD_ISSET(i, &read_fds))
 			{
 				if (i == 0)
-					stdin_event(server_socket, rsa);
+					stdin_event(server_socket);
 				else if (i == server_socket)
-					server_event(server_socket, rsa);
+					server_event(server_socket);
 				else
 					close(i);
 			}
@@ -135,11 +134,10 @@ static void setup_terminal(void)
 
 static void	sigHandler(int s)
 {
-	RSA				rsa;
 	std::string		sigMessage;
 
 	sigMessage = "\x80" + std::to_string(s);
-	rsa.EncodeWrite(currentServerSocket, sigMessage);
+	RSAEncrypt::WriteTo(currentServerSocket, sigMessage);
 }
 
 static void	usage(char *name) __attribute((noreturn));
@@ -160,6 +158,7 @@ static void reset_terminal(void)
 	term.c_lflag |= static_cast< unsigned int >(ICANON);
 	term.c_lflag |= static_cast< unsigned int >(ECHO);
 	tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
+	RSAEncrypt::DeInit();
 }
 
 int			main(int ac, char **av)
@@ -179,5 +178,6 @@ int			main(int ac, char **av)
 	signal(SIGINT, sigHandler);
 	signal(SIGQUIT, sigHandler);
 	setup_terminal();
+	RSAEncrypt::Init();
 	client_io(server_socket);
 }

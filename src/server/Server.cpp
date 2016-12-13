@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 16:05:56 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 19:43:58 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -145,7 +145,7 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 	std::string			stdbuff;
 	long				r;
 
-	if ((stdbuff = _rsa.DecodeRead(sock, &r)).empty())
+	if ((stdbuff = RSAEncrypt::ReadOn(sock, &r)).empty())
 		DisconnectClient(sock, fds);
 	else
 	{
@@ -197,7 +197,7 @@ void	Server::WriteToClient(const int sock, std::string & message)
 {
 	if (message.size() == 0)
 		return ;
-	_rsa.EncodeWrite(sock, message);
+	RSAEncrypt::WriteTo(sock, message);
 }
 
 void	Server::LoopUntilQuit(void)

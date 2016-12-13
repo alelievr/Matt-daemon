@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:09:04 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 16:04:12 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 19:44:05 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 #include <sys/select.h>
 #include <string.h>
 #include <termios.h>
-#include "RSA.hpp"
+#include "RSAEncrypt.hpp"
 #include "Tintin_reporter.hpp"
 #include "globals.h"
 
@@ -54,7 +54,6 @@ class		Server
 		std::function< void(const Client &) >					_onClientDisconnected;
 		//map with socket in key and ip as value.
 		std::map< int, Client >										_connectedClients;
-		RSA															_rsa;
 		struct winsize *											_window;
 		struct termios *											_terminal;
 

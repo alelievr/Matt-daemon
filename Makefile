@@ -6,7 +6,7 @@
 #    By: alelievr <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/07/15 15:13:38 by alelievr          #+#    #+#              #
-#    Updated: 2016/12/12 20:43:52 by root             ###   ########.fr        #
+#    Updated: 2016/12/13 19:32:43 by root             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -25,7 +25,7 @@ SRCCLIENTDIR=	src/client
 SRCCLIENT	=	main.cpp			\
 
 SRCBOTHDIR	=	src/
-SRCBOTH		=	RSA.cpp
+SRCBOTH		=	RSAEncrypt.cpp
 
 #	Objects
 OBJCLIENTDIR=	obj/client
