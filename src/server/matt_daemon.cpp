@@ -6,7 +6,7 @@
 /*   By: root <marvin@42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 20:27:56 by root              #+#    #+#             */
-/*   Updated: 2016/12/13 04:11:59 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 16:07:06 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,19 +40,19 @@ static void	work(void)
 	Server				server(4242, &term, &win);
 	Tintin_reporter::LogInfo("Starting is now listening on port 4242");
 
-	server.setOnNewClientConnected([&](const std::string & ip, bool accepted) {
+	server.setOnNewClientConnected([&](const Client & c, bool accepted) {
 			if (accepted)
-				Tintin_reporter::LogInfo("New client connected: " + ip);
+				Tintin_reporter::LogInfo("New client connected: " + c.ip);
 			else
 				Tintin_reporter::LogError("Connection refused, max simultaneous connection reached");
 		}
 	);
-	server.setOnClientDisconnected([&](const std::string & ip) {
-			Tintin_reporter::LogInfo("Client disconnected: " + ip);
+	server.setOnClientDisconnected([&](const Client & c) {
+			Tintin_reporter::LogInfo("Client disconnected: " + c.ip);
 		}
 	);
-	server.setOnClientRead([&](const std::string & ip, int sock, std::string & message) {
-			Tintin_reporter::Log("Client [" + ip + "]: " + message);
+	server.setOnClientRead([&](const Client & c, int sock, std::string & message) {
+			Tintin_reporter::LogClient(c.clientNumber, "Client [" + c.ip + "]: " + message);
 			(void)sock;
 		}
 	);

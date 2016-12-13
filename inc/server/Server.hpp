@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:09:04 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 12:33:11 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 16:04:12 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,11 +31,13 @@
 typedef struct
 {
 	std::string	ip;
+	int			clientNumber;
 	pid_t		shellPid;
 	int			master;
+	int			:32;
 }				Client;
 
-#define		NEW_CLIENT(ip)	Client{ip, 0, 0}
+#define		NEW_CLIENT(ip)	Client{ip, -1, 0, 0}
 #define		WRITE			1
 #define		READ			0
 
@@ -47,9 +49,9 @@ class		Server
 		int															_connectedClientsNumber;
 		bool														_quit;
 		long														:24;
-		std::function< void(const std::string &, bool accepted) >	_onNewClientConnected;
-		std::function< void(const std::string &, const int sock, std::string &) >	_onClientRead;
-		std::function< void(const std::string &) >					_onClientDisconnected;
+		std::function< void(const Client &, bool accepted) >	_onNewClientConnected;
+		std::function< void(const Client &, const int sock, std::string &) >	_onClientRead;
+		std::function< void(const Client &) >					_onClientDisconnected;
 		//map with socket in key and ip as value.
 		std::map< int, Client >										_connectedClients;
 		RSA															_rsa;
@@ -74,9 +76,9 @@ class		Server
 		void	LoopUntilQuit(void);
 		void	WriteToClient(int id, std::string & message);
 
-		void	setOnNewClientConnected(std::function< void(const std::string &, bool accepted) > tmp);
-		void	setOnClientRead(std::function< void(const std::string &, const int sock, std::string &) > tmp);
-		void	setOnClientDisconnected(std::function< void(const std::string &) > tmp);
+		void	setOnNewClientConnected(std::function< void(const Client &, bool accepted) > tmp);
+		void	setOnClientRead(std::function< void(const Client &, const int sock, std::string &) > tmp);
+		void	setOnClientDisconnected(std::function< void(const Client &) > tmp);
 };
 
 std::ostream &	operator<<(std::ostream & o, Server const & r);

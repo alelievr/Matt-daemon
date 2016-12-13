@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:30:03 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 14:16:40 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 15:04:12 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,11 @@ static void	stdin_event(int server_socket, const RSA & rsa)
 
 	if ((ret = read(STDIN_FILENO, buff, sizeof(buff) -1 )) < 0)
 		close(server_socket), exit(-1);
-	write(STDOUT_FILENO, buff, static_cast< size_t >(ret));
+	for (int i = 0; i < ret; i++)
+	{
+	//	if ((isprint(buff[i]) || buff[i] == '\n') && buff[i] != '\t')
+	//		write(STDOUT_FILENO, buff + i, 1);
+	}
 	if (ret == 0)
 		printf("quitting client ...\n"), exit(0);
 	buff[ret] = 0;
@@ -36,7 +40,7 @@ static void server_event(int server_socket, const RSA & rsa)
 	std::string	message;
 
 	if ((message = rsa.DecodeRead(server_socket, &ret)).empty())
-		close(server_socket), perror("read"), exit(-1);
+		close(server_socket), puts("closing connection ..."), exit(-1);
 	if (ret == 0)
 		printf("server closed the connection !\n"), exit(0);
 	std::cout << message << std::flush;
@@ -108,7 +112,7 @@ static int	connect_socket(int port, char *ip)
 			//checking the connection
 			getsockopt(sock, SOL_SOCKET, SO_ERROR, &ok, reinterpret_cast< socklen_t * >(&size));
 			if (ok)
-				std::cout << "async connect failed with code: " << ok << std::endl, exit(-1);
+				std::cout << "async connect failed: " << strerror(ok) << std::endl, exit(-1);
 		}
 		else
 			perror("connect"), exit(-1);
@@ -143,6 +147,19 @@ static void	usage(char *name)
 {
 	std::cout << "usage: " << name << " < host > [ port ]" << std::endl;
 	exit(0);
+}
+
+static void reset_terminal(void) __attribute__((destructor));
+static void reset_terminal(void)
+{
+	struct termios	term;
+
+	tcgetattr(STDIN_FILENO, &term);
+	term.c_cc[VMIN] = 1;
+	term.c_cc[VTIME] = 1;
+	term.c_lflag |= static_cast< unsigned int >(ICANON);
+	term.c_lflag |= static_cast< unsigned int >(ECHO);
+	tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
 }
 
 int			main(int ac, char **av)

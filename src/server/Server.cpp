@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 14:23:03 by root             ###   ########.fr       */
+/*   Updated: 2016/12/13 16:05:56 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,6 +64,7 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 	int					new_sock;
 	struct sockaddr_in	client_name;
 	socklen_t			size;
+	bool				ok;
 //	int					peer_len;
 
 	size = sizeof(client_name);
@@ -75,17 +76,31 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 
 	if (_connectedClientsNumber >= 3)
 	{
-		_onNewClientConnected("", false);
+		_onNewClientConnected(NEW_CLIENT(""), false);
 		close(new_sock);
 		return ;
 	}
 
 //	getpeername(new_sock, &client_name, &peer_len);
 	std::string ip = inet_ntoa(client_name.sin_addr);
-	if (_onNewClientConnected != NULL)
-		_onNewClientConnected(ip, true);
 
 	Client	c = NEW_CLIENT(ip);
+
+	//generate client number (between 0 and 3)
+	c.clientNumber = 0;
+	while (42)
+	{
+		ok = true;
+		for (const auto cc : _connectedClients)
+			if (cc.second.clientNumber == c.clientNumber)
+			{
+				c.clientNumber++;
+				ok = false;
+				break ;
+			}
+		if (ok)
+			break ;
+	}
 
 	//open shell and pipes
 	if ((c.shellPid = forkpty(&c.master, NULL, _terminal, _window)) == -1)
@@ -95,6 +110,9 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 	}
 	if (c.shellPid == 0)
 		exit(execl("/bin/bash", "bash", NULL));
+
+	if (_onNewClientConnected != NULL)
+		_onNewClientConnected(c, true);
 
 	FD_SET(c.master, fds);
 
@@ -108,7 +126,7 @@ void	Server::DisconnectClient(const int sock, fd_set *fds)
 {
 	Client c = _connectedClients[sock];
 	if (_onClientDisconnected != NULL)
-		_onClientDisconnected(c.ip);
+		_onClientDisconnected(c);
 	kill(SIGKILL, c.shellPid);
 
 	//close the client pty
@@ -126,18 +144,11 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 {
 	std::string			stdbuff;
 	long				r;
-	static char			cmd[0xF00];
-	static int			cmdIndex = 0;
 
 	if ((stdbuff = _rsa.DecodeRead(sock, &r)).empty())
 		DisconnectClient(sock, fds);
 	else
 	{
-		if (stdbuff == "quit" || stdbuff == "quit\n")
-		{
-			_quit = true;
-			return ;
-		}
 		Client c = _connectedClients[sock];
 		if (stdbuff[0] == static_cast< char >('\x80'))
 		{
@@ -149,7 +160,7 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 		else
 		{
  		   	if (_onClientRead != NULL)
-				_onClientRead(c.ip, sock, stdbuff);
+				_onClientRead(c, sock, stdbuff);
 			write(c.master, stdbuff.c_str(), stdbuff.size());
 		}
 	}
@@ -172,7 +183,7 @@ void	Server::ReadFromShell(const int shellTTY, const int clientSock, fd_set *fds
 	{
 		buff[r] = 0;
 		stdbuff = std::string(buff);
-		Tintin_reporter::Log("client [" + c.ip + "]: shell result: " + stdbuff);
+		Tintin_reporter::LogClient(c.clientNumber, "client [" + c.ip + "]: shell result: " + stdbuff);
 		WriteToClient(clientSock, stdbuff);
 	}
 	else
@@ -227,9 +238,9 @@ Server::~Server(void)
 {
 }
 
-void		Server::setOnNewClientConnected(std::function< void(const std::string &, bool accepted) > tmp) { this->_onNewClientConnected = tmp; }
-void		Server::setOnClientRead(std::function< void(const std::string &, int sock, std::string &) > tmp) { this->_onClientRead = tmp; }
-void		Server::setOnClientDisconnected(std::function< void(const std::string &) > tmp) { this->_onClientDisconnected = tmp; }
+void		Server::setOnNewClientConnected(std::function< void(const Client &, bool accepted) > tmp) { this->_onNewClientConnected = tmp; }
+void		Server::setOnClientRead(std::function< void(const Client &, int sock, std::string &) > tmp) { this->_onClientRead = tmp; }
+void		Server::setOnClientDisconnected(std::function< void(const Client &) > tmp) { this->_onClientDisconnected = tmp; }
 
 std::ostream &	operator<<(std::ostream & o, Server const & r)
 {
