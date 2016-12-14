@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:34:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 19:49:35 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 01:25:04 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,7 @@ class		RSAEncrypt
 		static void			Init();
 		static void			DeInit();
 
-		static void			WriteTo(const int sock, std::string message);
+		static void			WriteTo(const int sock, char *msg, const size_t size);
 		static std::string	ReadOn(const int sock, long *r);
 
 		static const char *	GetPublicKey(void);

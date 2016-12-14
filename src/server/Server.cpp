@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 19:43:58 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 01:51:44 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <pty.h>
+#include <poll.h>
 
 void	Server::openSocket(int port)
 {
@@ -30,7 +31,7 @@ void	Server::openSocket(int port)
 		perror("setsockopt"), exit(-1);
 
 	sin.sin_family = AF_INET;
-	sin.sin_port = htons(port);
+	sin.sin_port = htons(static_cast< uint16_t >(port));
 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
 	if (bind(_socket, reinterpret_cast< const struct sockaddr * >(&sin), sizeof(sin)) == -1)
 		perror("bind"), exit(-1);
@@ -138,6 +139,7 @@ void	Server::DisconnectClient(const int sock, fd_set *fds)
 	close(sock);
 	FD_CLR(sock, fds);
 	FD_CLR(c.master, fds);
+	_connectedClients.erase(sock);
 }
 
 void	Server::ReadFromClient(const int sock, fd_set *fds)
@@ -169,8 +171,7 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 void	Server::ReadFromShell(const int shellTTY, const int clientSock, fd_set *fds)
 {
 	char			buff[0xF000];
-	std::string		stdbuff;
-	long			r;
+	long			r = 1;
 
 	Client c = _connectedClients[clientSock];
 	if ((r = read(shellTTY, buff, sizeof(buff) - 1)) == -1)
@@ -182,9 +183,8 @@ void	Server::ReadFromShell(const int shellTTY, const int clientSock, fd_set *fds
 	if (r > 0)
 	{
 		buff[r] = 0;
-		stdbuff = std::string(buff);
-		Tintin_reporter::LogClient(c.clientNumber, "client [" + c.ip + "]: shell result: " + stdbuff);
-		WriteToClient(clientSock, stdbuff);
+		Tintin_reporter::LogClient(c.clientNumber, "client [" + c.ip + "]: shell result: " + buff);
+		WriteToClient(clientSock, buff, static_cast< size_t >(r));
 	}
 	else
 	{
@@ -193,11 +193,9 @@ void	Server::ReadFromShell(const int shellTTY, const int clientSock, fd_set *fds
 	}
 }
 
-void	Server::WriteToClient(const int sock, std::string & message)
+void	Server::WriteToClient(const int sock, char *msg, size_t size)
 {
-	if (message.size() == 0)
-		return ;
-	RSAEncrypt::WriteTo(sock, message);
+	RSAEncrypt::WriteTo(sock, msg, size);
 }
 
 void	Server::LoopUntilQuit(void)
@@ -209,6 +207,7 @@ void	Server::LoopUntilQuit(void)
 	FD_SET(_socket, &active_fds);
 	while (42)
 	{
+		std::cout << "select\n";
 		read_fds = active_fds;
 		if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) < 0)
 			Tintin_reporter::LogError(std::string("select: ") + strerror(errno)), raise(SIGQUIT);

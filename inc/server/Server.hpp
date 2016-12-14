@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:09:04 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 19:44:05 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 01:26:28 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,7 +73,7 @@ class		Server
 		Server &	operator=(Server const & src) = delete;
 
 		void	LoopUntilQuit(void);
-		void	WriteToClient(int id, std::string & message);
+		void	WriteToClient(int id, char *msg, size_t size);
 
 		void	setOnNewClientConnected(std::function< void(const Client &, bool accepted) > tmp);
 		void	setOnClientRead(std::function< void(const Client &, const int sock, std::string &) > tmp);

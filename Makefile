@@ -6,7 +6,7 @@
 #    By: alelievr <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/07/15 15:13:38 by alelievr          #+#    #+#              #
-#    Updated: 2016/12/13 19:32:43 by root             ###   ########.fr        #
+#    Updated: 2016/12/14 01:35:44 by root             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -60,7 +60,7 @@ CPROTECTION	=	-z execstack -fno-stack-protector
 
 DEBUGFLAGS1	=	-fsanitize=address -ggdb -O0 -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
 DEBUGFLAGS2	=	-fsanitize-memory-track-origins=2
-OPTFLAGS1	=	-funroll-loops -O2
+OPTFLAGS1	=	-funroll-loops -O1
 OPTFLAGS2	=	-pipe -funroll-loops -Ofast
 
 #	Framework

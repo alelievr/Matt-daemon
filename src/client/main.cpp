@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:30:03 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 19:50:50 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 01:42:29 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,20 +18,14 @@ static void	stdin_event(int server_socket)
 {
 	char		buff[0xF00];
 	long		ret;
-	std::string	message;
 
 	if ((ret = read(STDIN_FILENO, buff, sizeof(buff) -1 )) < 0)
 		close(server_socket), exit(-1);
-	for (int i = 0; i < ret; i++)
-	{
-	//	if ((isprint(buff[i]) || buff[i] == '\n') && buff[i] != '\t')
-	//		write(STDOUT_FILENO, buff + i, 1);
-	}
-	if (ret == 0)
+	if (ret == 0 || buff[0] == '\x04')
 		printf("quitting client ...\n"), exit(0);
 	buff[ret] = 0;
-	message = std::string(buff);
-	RSAEncrypt::WriteTo(server_socket, message);
+	std::cout << "writing \"" << buff << "\" to socket\n";
+	RSAEncrypt::WriteTo(server_socket, buff, static_cast< size_t >(ret));
 }
 
 static void server_event(int server_socket)
@@ -62,7 +56,10 @@ static void	client_io(int server_socket)
 		if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) < 0)
 		{
 			if (errno == 4)
+			{
+				std::cout << "catched signal 4\n";
 				continue;
+			}
 			close(server_socket), perror("select"), exit(-1);
 		}
 		for (int i = 0; i < FD_SETSIZE; i++)
@@ -82,41 +79,21 @@ static int	connect_socket(int port, char *ip)
 {
 	struct sockaddr_in		connection;
 	struct protoent			*proto;
-	struct pollfd			connecting_sock[1];
-	const int				yes = 1;
 	int						sock;
-	int						ok;
-	int						size = sizeof(int);
 
 	if ((proto = getprotobyname("tcp")) < 0)
 		perror("getprotobyname"), exit(-1);
 	if ((sock = socket(PF_INET, SOCK_STREAM, proto->p_proto)) < 0)
 		perror("socket"), exit(-1);
-	fcntl(sock, F_SETFL, O_NONBLOCK);
 	connection.sin_family = AF_INET;
-	connection.sin_port = htons(port);
+	connection.sin_port = htons(static_cast< uint16_t >(port));
 	if (inet_pton(AF_INET, ip, &connection.sin_addr) < 0)
 		perror("inet_aton"), exit(-1);
-	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) < 0)
-		perror("setsockopt"), exit(-1);
+	std::cout << "olol\n";
 	if (connect(sock, reinterpret_cast< struct sockaddr *>(&connection), sizeof(connection)) < 0)
-	{
-		if (errno == EINPROGRESS)
-		{
-			//waiting to connect
-			connecting_sock[0].fd = sock;
-			connecting_sock[0].events = POLLIN;
-			poll(connecting_sock, 1, -1);
-
-			//checking the connection
-			getsockopt(sock, SOL_SOCKET, SO_ERROR, &ok, reinterpret_cast< socklen_t * >(&size));
-			if (ok)
-				std::cout << "async connect failed: " << strerror(ok) << std::endl, exit(-1);
-		}
-		else
-			perror("connect"), exit(-1);
-	}
+		perror("connect"), exit(-1);
 	currentServerSocket = sock;
+	std::cout << "olol\n";
 	return sock;
 }
 
@@ -137,7 +114,7 @@ static void	sigHandler(int s)
 	std::string		sigMessage;
 
 	sigMessage = "\x80" + std::to_string(s);
-	RSAEncrypt::WriteTo(currentServerSocket, sigMessage);
+	RSAEncrypt::WriteTo(currentServerSocket, const_cast< char *>(sigMessage.c_str()), sigMessage.size());
 }
 
 static void	usage(char *name) __attribute((noreturn));

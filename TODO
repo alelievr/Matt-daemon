@@ -1,4 +1,2 @@
-cmd stack to check server "quit" command
-implement readline library for client input
 setup the network signal
-fix error when /var/log/matt-daemon does not exists the foirst time it run
+GET IT WORK WITHOUT -O2 FLAG !!!

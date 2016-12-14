@@ -25,9 +25,9 @@ std::string	RSAEncrypt::ReadOn(const int sock, long *r)
 	return std::string(buff);
 }
 
-void		RSAEncrypt::WriteTo(const int sock, std::string message)
+void		RSAEncrypt::WriteTo(const int sock, char *msg, const size_t size)
 {
-	write(sock, message.c_str(), message.size());
+	write(sock, msg, size);
 }
 
 const char *	RSAEncrypt::GetPublicKey(void) { return _publicKey; }
