@@ -2,6 +2,9 @@
 
 #define ENCRYPT
 
+int		RSAEncrypt::_packetID = 0;
+int		RSAEncrypt::_pipe[2] = {0, 0};
+
 RSAEncrypt::RSAEncrypt() : _remoteKey(NULL)
 {
 	BIGNUM		*e = NULL;
@@ -15,6 +18,9 @@ RSAEncrypt::RSAEncrypt() : _remoteKey(NULL)
 	if (RSA_generate_key_ex(_myKey, KEY_LENGTH, e, NULL) != 1)
 		puts("failed to generate RSA keypair\n"), exit(-1);
 
+	if (!_pipe[0] && !_pipe[1]) //if pipe is not initialized
+		pipe(_pipe);
+
 }
 
 RSAEncrypt::~RSAEncrypt()
@@ -24,53 +30,74 @@ RSAEncrypt::~RSAEncrypt()
 
 std::string	RSAEncrypt::ReadOn(const int sock, long *r)
 {
-	char		buff[0xF000 + 1];
+	char		buff[ENCRYPTED_MSG_SIZE];
+
+#ifdef ENCRYPT
+	char			err[0xF0];
+	DataPacket		packet;
+	std::string		decrypted = "";
+	struct pollfd	reader[1];
+
+	reader[0].fd = sock;
+	reader[0].events = POLLIN;
+	while (42)
+	{
+		if ((*r = read(sock, buff, sizeof(buff))) == -1)
+			break ;
+
+		bzero(&packet, sizeof(packet));
+		if (RSA_private_decrypt(
+					static_cast< int >(*r),
+					reinterpret_cast< unsigned char * >(buff),
+					reinterpret_cast< unsigned char * >(&packet),
+					_myKey,
+					RSA_PKCS1_OAEP_PADDING) == -1)
+		{
+			ERR_load_crypto_strings();
+			ERR_error_string(ERR_get_error(), err);
+			std::cerr << "Error decrypting message: " << err << std::endl;
+		}
+		decrypted += packet.data;
+
+		if (poll(reader, 1, 0) == 0) //end of transmitted packets
+			break ;
+	}
+	if (*r != -1)
+		*r = static_cast< long >(decrypted.size());
+	return decrypted;
+
+#else
 
 	*r = read(sock, buff, sizeof(buff) - 1);
 	if (*r >= 0)
 		buff[*r] = 0;
 
-#ifdef ENCRYPT
-	char		err[0xF0];
-	char		decrypted[KEY_LENGTH * 8];
-
-	if (RSA_private_decrypt(
-				static_cast< int >(*r),
-				reinterpret_cast< unsigned char * >(buff),
-				reinterpret_cast< unsigned char * >(decrypted),
-				_myKey,
-				RSA_PKCS1_OAEP_PADDING) == -1)
-	{
-		ERR_load_crypto_strings();
-		ERR_error_string(ERR_get_error(), err);
-		std::cerr << "Error decrypting message: " << err << std::endl;
-	}
-	return std::string(decrypted);
-#else
 	return std::string(buff);
+
 #endif
 }
 
-void		RSAEncrypt::WriteTo(const int sock, char *msg, const size_t size)
+void		RSAEncrypt::WriteTo(const int sock, char *msg, size_t size)
 {
 #ifdef ENCRYPT
 	char		err[0xF0];
-	char		msg_buff[MSG_BLOCK_SIZE];
-	char		encrypted[KEY_LENGTH * 8];
-	long		s;
+	DataPacket	packet;
+	char		encrypted[KEY_LENGTH];
+	size_t		s;
 	int			encrypted_length;
 
+	_packetID++;
 	while (42)
 	{
-		s = static_cast< long >(strlcpy(msg_buff, msg, MSG_BLOCK_SIZE));
-		s = (size > MSG_BLOCK_SIZE) ? MSG_BLOCK_SIZE : s;
-		memcpy(msg_buff, msg, s);
-
-		std::cout << "encrypt length: " << s << "block size: " << MSG_BLOCK_SIZE << std::endl;;
+		s = (size > MSG_BLOCK_DATA_SIZE) ? MSG_BLOCK_DATA_SIZE :size;
+		bzero(&packet, sizeof(packet));
+		memcpy(&packet.id, &_packetID, sizeof(int));
+		memcpy(packet.data, msg, s - 4lu);
+		packet.data[s] = 0;
 		if ((encrypted_length = RSA_public_encrypt(
 						static_cast< int >(s),
-						reinterpret_cast< unsigned char *>(msg_buff),
-						reinterpret_cast< unsigned char *>(encrypted),
+						reinterpret_cast< unsigned char * >(&packet),
+						reinterpret_cast< unsigned char * >(encrypted),
 						_remoteKey,
 						RSA_PKCS1_OAEP_PADDING)) == -1)
 		{
@@ -78,11 +105,11 @@ void		RSAEncrypt::WriteTo(const int sock, char *msg, const size_t size)
 			ERR_error_string(ERR_get_error(), err);
 			std::cerr << "Error encrypting message: " << err << std::endl;
 		}
-		
+
 		write(sock, encrypted, static_cast< size_t >(encrypted_length));
-		msg += MSG_BLOCK_SIZE;
-		s -= s;
-		if (s == 0)
+		msg += MSG_BLOCK_DATA_SIZE - 4lu;
+		size -= s;
+		if (size <= 0)
 			break ;
 	}
 #else
@@ -112,7 +139,6 @@ size_t		RSAEncrypt::GetMyPublicKey(unsigned char *buff) {
 void		RSAEncrypt::SetRemotePublicKey(unsigned char * k, size_t size) {
 	char			err[0xF00];
 	BIO				*bio = BIO_new_mem_buf(k, static_cast< int >(size));
-	struct pollfd	fd;
 
 	if (!bio)
 		puts("error while allocating space for new public key"), exit(-1);
@@ -131,7 +157,7 @@ void		RSAEncrypt::SetRemotePublicKey(unsigned char * k, size_t size) {
 
 	BIO_free(bio);
 }
-
+/*
 int		main(void)
 {
 	RSAEncrypt	RSAEncryptor;
@@ -144,7 +170,7 @@ int		main(void)
 	RSAEncryptor.SetRemotePublicKey(buff, size);
 
 	pipe(fd);
-	char	*str = "crypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\ncrypto !\n";
-	RSAEncryptor.WriteTo(fd[1], str, strlen(str));
+	char	*str = "crypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !n\n";
+	RSAEncryptor.WriteTo(fd[1], str, strlen(str) + 1);
 	std::cout << RSAEncryptor.ReadOn(fd[0], &r);
-}
+}*/

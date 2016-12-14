@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:34:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 16:59:27 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 22:41:13 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,23 +30,27 @@
 #include <string.h>
 #include <stdlib.h>
 #include <bsd/string.h>
+#include <poll.h>
 
-#define MSG_BLOCK_SIZE	86
-#define KEY_LENGTH		1024
-#define PUB_EXP			3
+#define MSG_BLOCK_SIZE		16 //86
+#define MSG_BLOCK_DATA_SIZE	(MSG_BLOCK_SIZE - sizeof(int) - 1)
+#define ENCRYPTED_MSG_SIZE	128
+#define KEY_LENGTH			1024
+#define PUB_EXP				3
 
 typedef struct
 {
-	char	*data;
-	size_t	length;
-}				EncodedData;
+	int		id;
+	char	data[MSG_BLOCK_DATA_SIZE + 1]; //+ 1 for \zero :)
+}				DataPacket;
 
 class		RSAEncrypt
 {
 	private:
 		RSA *			_myKey;
 		RSA *			_remoteKey;
-
+		static int		_packetID;
+		static int		_pipe[2];
 
 	public:
 		RSAEncrypt(void);
@@ -55,7 +59,7 @@ class		RSAEncrypt
 
 		RSAEncrypt &	operator=(RSAEncrypt const & src) = delete;
 
-		void			WriteTo(const int sock, char *msg, const size_t size);
+		void			WriteTo(const int sock, char *msg, size_t size);
 		std::string		ReadOn(const int sock, long *r);
 
 		size_t			GetMyPublicKey(unsigned char *buff);
