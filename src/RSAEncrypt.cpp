@@ -1,50 +1,44 @@
 #include "RSAEncrypt.hpp"
 
-#define ENCRYPT
+//#define ENCRYPT
 
-char *		RSAEncrypt::_publicKey;
-size_t		RSAEncrypt::_publicKeyLength;
-char *		RSAEncrypt::_privateKey;
-size_t		RSAEncrypt::_privateKeyLength;
-RSA *		RSAEncrypt::_keypair;
-
-void		RSAEncrypt::Init(void)
+RSAEncrypt::RSAEncrypt() : _remoteKey(NULL)
 {
-	RSA			*r = NULL;
 	BIGNUM		*e = NULL;
-	//BIO			*pb_public = NULL, *pb_private = NULL;
 	
+	e = BN_new();
 	//RSA keypair generation:
 	if ((BN_set_word(e, PUB_EXP)) != 1)
 		puts("error while initializing RSA\n"), exit(-1);
 
-	r = RSA_new();
-	if (RSA_generate_key_ex(_keypair, KEY_LENGTH, e, NULL) != 1)
+	_myKey = RSA_new();
+	if (RSA_generate_key_ex(_myKey, KEY_LENGTH, e, NULL) != 1)
 		puts("failed to generate RSA keypair\n"), exit(-1);
 
-	//to get the 
 }
 
-void		RSAEncrypt::DeInit(void)
+RSAEncrypt::~RSAEncrypt()
 {
-
+	RSA_free(_myKey);
 }
 
 std::string	RSAEncrypt::ReadOn(const int sock, long *r)
 {
 	char		buff[0xF000 + 1];
-	char		err[0xF0];
-	char		decrypted[KEY_LENGTH * 8];
 
 	*r = read(sock, buff, sizeof(buff) - 1);
 	if (*r >= 0)
 		buff[*r] = 0;
+
 #ifdef ENCRYPT
+	char		err[0xF0];
+	char		decrypted[KEY_LENGTH * 8];
+
 	if (RSA_private_decrypt(
 				static_cast< int >(*r),
 				reinterpret_cast< unsigned char *>(buff),
 				reinterpret_cast< unsigned char * >(decrypted),
-				_keypair,
+				_myKey,
 				RSA_PKCS1_OAEP_PADDING) == -1)
 	{
 		ERR_load_crypto_strings();
@@ -59,13 +53,13 @@ std::string	RSAEncrypt::ReadOn(const int sock, long *r)
 
 void		RSAEncrypt::WriteTo(const int sock, char *msg, const size_t size)
 {
+#ifdef ENCRYPT
 	char		err[0xF0];
 	char		msg_buff[MSG_BLOCK_SIZE];
 	char		encrypted[KEY_LENGTH * 8];
 	long		s;
 	int			encrypted_length;
 
-#ifdef ENCRYPT
 	while (42)
 	{
 		s = static_cast< long >(strlcpy(msg_buff, msg, MSG_BLOCK_SIZE));
@@ -74,7 +68,7 @@ void		RSAEncrypt::WriteTo(const int sock, char *msg, const size_t size)
 						static_cast< int >(s),
 						reinterpret_cast< unsigned char *>(msg_buff),
 						reinterpret_cast< unsigned char *>(encrypted),
-						_keypair,
+						_remoteKey,
 						RSA_PKCS1_OAEP_PADDING)) == -1)
 		{
 			ERR_load_crypto_strings();
@@ -93,5 +87,32 @@ void		RSAEncrypt::WriteTo(const int sock, char *msg, const size_t size)
 	(void)size;
 }
 
-const char *	RSAEncrypt::GetPublicKey(void) { return _publicKey; }
-void			RSAEncrypt::SetPublicKey(char * k) { _publicKey = k; }
+size_t		RSAEncrypt::GetMyPublicKey(unsigned char *buff) {
+	int		len = i2d_RSAPublicKey(_myKey, &buff);
+	
+	return static_cast< size_t >(len);
+}
+
+void		RSAEncrypt::SetRemotePublicKey(unsigned char * k, size_t size) {
+	BIO	*bio = BIO_new_mem_buf(k, static_cast< int >(size));
+	if (!bio)
+		puts("error while allocating space for new public key"), exit(-1);
+
+	EVP_PKEY *pkey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL);
+	if (!pkey)
+		puts("error while reading new public key"), exit(-1);
+
+/*	int type = EVP_PKEY_get_type(pkey)
+	if (type != EVP_PKEY_RSA2 && type != EVP_PKEY_RSA)
+		puts("entered public key is not a RSA key !"), exit(-1);*/
+
+	if (_remoteKey != NULL)
+		RSA_free(_remoteKey);
+
+	_remoteKey = EVP_PKEY_get1_RSA(pkey);
+	if (_remoteKey == NULL)
+		puts("fuck ..."), exit(-1);
+
+	EVP_PKEY_free(pkey);
+	BIO_free(bio);
+}

@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:34:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 07:31:20 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 15:01:34 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 #include <bsd/string.h>
 
 #define MSG_BLOCK_SIZE	2048
@@ -43,27 +44,22 @@ typedef struct
 class		RSAEncrypt
 {
 	private:
-		static char *			_publicKey;
-		static size_t			_publicKeyLength;
-		static char *			_privateKey;
-		static size_t			_privateKeyLength;
-		static RSA *			_keypair;
+		RSA *			_myKey;
+		RSA *			_remoteKey;
+
 
 	public:
-		RSAEncrypt(void) = delete;
+		RSAEncrypt(void);
 		RSAEncrypt(const RSAEncrypt &) = delete;
-		virtual ~RSAEncrypt(void) = delete;
+		virtual ~RSAEncrypt(void);
 
 		RSAEncrypt &	operator=(RSAEncrypt const & src) = delete;
 
-		static void			Init();
-		static void			DeInit();
+		void			WriteTo(const int sock, char *msg, const size_t size);
+		std::string		ReadOn(const int sock, long *r);
 
-		static void			WriteTo(const int sock, char *msg, const size_t size);
-		static std::string	ReadOn(const int sock, long *r);
-
-		static const char *	GetPublicKey(void);
-		static void			SetPublicKey(char *k);
+		size_t			GetMyPublicKey(unsigned char *buff);
+		void			SetRemotePublicKey(unsigned char *k, size_t size);
 
 };
 

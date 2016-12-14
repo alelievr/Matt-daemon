@@ -6,13 +6,14 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:30:03 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 04:09:38 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 15:08:37 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ben_afk.hpp"
 
-static int	currentServerSocket;
+static int			currentServerSocket;
+static RSAEncrypt	*RSAEncryptor;
 
 static void	stdin_event(int server_socket)
 {
@@ -24,7 +25,7 @@ static void	stdin_event(int server_socket)
 	if (ret == 0 || buff[0] == '\x04')
 		printf("quitting client ...\n"), exit(0);
 	buff[ret] = 0;
-	RSAEncrypt::WriteTo(server_socket, buff, static_cast< size_t >(ret));
+	RSAEncryptor->WriteTo(server_socket, buff, static_cast< size_t >(ret));
 }
 
 static void server_event(int server_socket)
@@ -32,7 +33,7 @@ static void server_event(int server_socket)
 	long		ret;
 	std::string	message;
 
-	if ((message = RSAEncrypt::ReadOn(server_socket, &ret)).empty())
+	if ((message = RSAEncryptor->ReadOn(server_socket, &ret)).empty())
 		close(server_socket), puts("closing connection ..."), exit(-1);
 	if (ret == 0)
 		printf("server closed the connection !\n"), exit(0);
@@ -130,7 +131,7 @@ static void	sigHandler(int s)
 	std::string		sigMessage;
 
 	sigMessage = "\x80" + std::to_string(s);
-	RSAEncrypt::WriteTo(currentServerSocket, const_cast< char *>(sigMessage.c_str()), sigMessage.size());
+	RSAEncryptor->WriteTo(currentServerSocket, const_cast< char *>(sigMessage.c_str()), sigMessage.size());
 }
 
 static void	usage(char *name) __attribute((noreturn));
@@ -151,7 +152,7 @@ static void reset_terminal(void)
 	term.c_lflag |= static_cast< unsigned int >(ICANON);
 	term.c_lflag |= static_cast< unsigned int >(ECHO);
 	tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
-	RSAEncrypt::DeInit();
+	delete RSAEncryptor;
 }
 
 int			main(int ac, char **av)
@@ -176,6 +177,6 @@ int			main(int ac, char **av)
 	signal(SIGINT, sigHandler);
 	signal(SIGQUIT, sigHandler);
 	setup_terminal();
-	RSAEncrypt::Init();
+	RSAEncryptor = new RSAEncrypt();
 	client_io(server_socket);
 }

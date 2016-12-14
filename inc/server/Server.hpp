@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:09:04 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 01:26:28 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 15:12:22 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,13 +31,14 @@
 typedef struct
 {
 	std::string	ip;
+	RSAEncrypt	*rsa;
 	int			clientNumber;
 	pid_t		shellPid;
 	int			master;
 	int			:32;
 }				Client;
 
-#define		NEW_CLIENT(ip)	Client{ip, -1, 0, 0}
+#define		NEW_CLIENT(ip)	Client{ip, NULL, -1, 0, 0}
 #define		WRITE			1
 #define		READ			0
 
@@ -62,6 +63,9 @@ class		Server
 		void	ReadFromClient(const int sock, fd_set *fds);
 		void	ReadFromShell(const int shellStdout, const int clientSock, fd_set *fds);
 		void	DisconnectClient(const int sock, fd_set *fds);
+
+	protected:
+		RSAEncrypt		*RSAEncryptor;
 
 	public:
 		Server(void);

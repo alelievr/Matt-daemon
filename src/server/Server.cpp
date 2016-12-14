@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 04:10:02 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 15:16:47 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,7 +57,13 @@ Server::Server(int p, struct termios *term, struct winsize *win) :
 	_window(win),
 	_terminal(term)
 {
+	RSAEncryptor = new RSAEncrypt();
 	openSocket(_port);
+}
+
+Server::~Server(void)
+{
+	delete RSAEncryptor;
 }
 
 void	Server::NewConnection(const int sock, fd_set *fds)
@@ -89,6 +95,7 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 
 	//generate client number (between 0 and 3)
 	c.clientNumber = 0;
+	c.rsa = new RSAEncrypt();
 	while (42)
 	{
 		ok = true;
@@ -133,6 +140,8 @@ void	Server::DisconnectClient(const int sock, fd_set *fds)
 	//close the client pty
 	close(c.master);
 
+	delete c.rsa;
+
 	_connectedClientsNumber--;
 
 	//close and remove client socket
@@ -146,12 +155,12 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 {
 	std::string			stdbuff;
 	long				r;
+	Client				c = _connectedClients[sock];
 
-	if ((stdbuff = RSAEncrypt::ReadOn(sock, &r)).empty())
+	if ((stdbuff = c.rsa->ReadOn(sock, &r)).empty())
 		DisconnectClient(sock, fds);
 	else
 	{
-		Client c = _connectedClients[sock];
 		if (stdbuff[0] == static_cast< char >('\x80'))
 		{
 			stdbuff.erase(0, 1);
@@ -195,7 +204,7 @@ void	Server::ReadFromShell(const int shellTTY, const int clientSock, fd_set *fds
 
 void	Server::WriteToClient(const int sock, char *msg, size_t size)
 {
-	RSAEncrypt::WriteTo(sock, msg, size);
+	RSAEncryptor->WriteTo(sock, msg, size);
 }
 
 void	Server::LoopUntilQuit(void)
@@ -230,10 +239,6 @@ void	Server::LoopUntilQuit(void)
 		if (_quit)
 			break ;
 	}
-}
-
-Server::~Server(void)
-{
 }
 
 void		Server::setOnNewClientConnected(std::function< void(const Client &, bool accepted) > tmp) { this->_onNewClientConnected = tmp; }
