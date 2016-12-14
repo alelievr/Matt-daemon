@@ -86,6 +86,7 @@ extern "C" void		matt_daemon(int lock_fd)
 	Tintin_reporter::LogInfo("Quitting");
 	flock(lock_fd, LOCK_UN);
 	close(lock_fd);
+	unlink(LOCK_FILE);
 	Tintin_reporter::DeInit();
 	exit(0);
 }

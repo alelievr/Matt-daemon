@@ -1,3 +1,34 @@
-cmd stack to check server "quit" command
-implement readline library for client input
 setup the network signal
+fix display in cmd line
+
+
+Create RFC class which analyse readed datas from client and call good callback
+RFC		rfc;
+
+	std::sting message = rsa.DecodeRead(sock);
+	rfc.Analyze(message);
+
+	[byte]hnteoijhierjho
+
+
+	message = '\x80AAAAAA'
+	message.erase(0, 1);
+	if (byte == '\x80')
+		int sig = message;
+		sigCallback(sig)
+
+	if (byte == '\x81')
+		loginCallback(message + 1);
+
+	std::string login = "alelievr";
+	rfc.sendLogin(login);
+
+
+
+
+	void	sendLogin(const int sock, const std::string & login)
+	{
+		RSA	rsa;
+
+		rsa.ENcodeWrite(sock, "\x81" + login);
+	}
