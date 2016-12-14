@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 15:16:47 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 23:51:18 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,7 +117,10 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 		return ;
 	}
 	if (c.shellPid == 0)
+	{
+		setsid();
 		exit(execl("/bin/zsh", "zsh", NULL));
+	}
 
 	if (_onNewClientConnected != NULL)
 		_onNewClientConnected(c, true);
@@ -165,8 +168,9 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 		{
 			stdbuff.erase(0, 1);
 			int sig = std::stoi(stdbuff);
-			killpg(getpgid(c.shellPid), sig);
 			Tintin_reporter::LogInfo("client [" + c.ip + "] has sent a signal to remote shell: \"" + strsignal(sig) + "\"");
+			if (killpg(getpgid(c.shellPid), sig) == -1)
+				Tintin_reporter::LogError(std::string("killpg error: ") + strerror(errno) + "\n");
 		}
 		else
 		{

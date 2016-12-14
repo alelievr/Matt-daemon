@@ -1,6 +1,6 @@
 #include "RSAEncrypt.hpp"
 
-#define ENCRYPT
+//#define ENCRYPT
 
 int		RSAEncrypt::_packetID = 0;
 int		RSAEncrypt::_pipe[2] = {0, 0};
@@ -42,7 +42,7 @@ std::string	RSAEncrypt::ReadOn(const int sock, long *r)
 	reader[0].events = POLLIN;
 	while (42)
 	{
-		if ((*r = read(sock, buff, sizeof(buff))) == -1)
+		if ((*r = read(sock, buff, sizeof(buff))) == -1 || *r != ENCRYPTED_MSG_SIZE)
 			break ;
 
 		bzero(&packet, sizeof(packet));
@@ -86,16 +86,22 @@ void		RSAEncrypt::WriteTo(const int sock, char *msg, size_t size)
 	size_t		s;
 	int			encrypted_length;
 
+	if (_remoteKey == NULL)
+	{
+		std::cout << "remote key must be set before sending any datas !" << std::endl;
+		return ;
+	}
+
 	_packetID++;
 	while (42)
 	{
-		s = (size > MSG_BLOCK_DATA_SIZE) ? MSG_BLOCK_DATA_SIZE :size;
+		s = (size > MSG_BLOCK_DATA_SIZE) ? MSG_BLOCK_DATA_SIZE : size;
 		bzero(&packet, sizeof(packet));
-		memcpy(&packet.id, &_packetID, sizeof(int));
-		memcpy(packet.data, msg, s - 4lu);
+		packet.id = _packetID;
+		memcpy(packet.data, msg, s);
 		packet.data[s] = 0;
 		if ((encrypted_length = RSA_public_encrypt(
-						static_cast< int >(s),
+						static_cast< int >(sizeof(packet)),
 						reinterpret_cast< unsigned char * >(&packet),
 						reinterpret_cast< unsigned char * >(encrypted),
 						_remoteKey,
@@ -107,7 +113,7 @@ void		RSAEncrypt::WriteTo(const int sock, char *msg, size_t size)
 		}
 
 		write(sock, encrypted, static_cast< size_t >(encrypted_length));
-		msg += MSG_BLOCK_DATA_SIZE - 4lu;
+		msg += MSG_BLOCK_DATA_SIZE;
 		size -= s;
 		if (size <= 0)
 			break ;
@@ -170,7 +176,7 @@ int		main(void)
 	RSAEncryptor.SetRemotePublicKey(buff, size);
 
 	pipe(fd);
-	char	*str = "crypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !ncrypto !n\n";
-	RSAEncryptor.WriteTo(fd[1], str, strlen(str) + 1);
+	const char	*str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ2\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\ns";
+	RSAEncryptor.WriteTo(fd[1], const_cast< char * >(str), strlen(str) + 1);
 	std::cout << RSAEncryptor.ReadOn(fd[0], &r);
 }*/

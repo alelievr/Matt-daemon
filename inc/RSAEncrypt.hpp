@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:34:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 22:41:13 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 23:11:59 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@
 #include <bsd/string.h>
 #include <poll.h>
 
-#define MSG_BLOCK_SIZE		16 //86
+#define MSG_BLOCK_SIZE		84 //86
 #define MSG_BLOCK_DATA_SIZE	(MSG_BLOCK_SIZE - sizeof(int) - 1)
 #define ENCRYPTED_MSG_SIZE	128
 #define KEY_LENGTH			1024
@@ -41,7 +41,7 @@
 typedef struct
 {
 	int		id;
-	char	data[MSG_BLOCK_DATA_SIZE + 1]; //+ 1 for \zero :)
+		char	data[MSG_BLOCK_DATA_SIZE + 1]; //+ 1 for \zero :)
 }				DataPacket;
 
 class		RSAEncrypt
