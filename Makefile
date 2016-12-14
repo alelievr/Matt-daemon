@@ -6,7 +6,7 @@
 #    By: alelievr <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/07/15 15:13:38 by alelievr          #+#    #+#              #
-#    Updated: 2016/12/14 02:37:05 by root             ###   ########.fr        #
+#    Updated: 2016/12/14 08:23:51 by root             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -47,7 +47,7 @@ INCDIRS		=	inc/server inc/client inc
 
 #	Libraries
 LIBDIRS		=	
-LDLIBS		=	-lutil -lbsd
+LDLIBS		=	-lutil -lbsd -lssl -lcrypto
 
 #	Output
 SERVNAME	=	Matt_daemon

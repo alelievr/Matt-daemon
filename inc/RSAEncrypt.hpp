@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:34:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 01:25:04 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 07:31:20 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,14 +19,20 @@
 #include <sstream>
 #include <limits>
 
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
+
 #include <math.h>
 #include <gmp.h>
 #include <signal.h>
 #include <unistd.h>
 #include <string.h>
+#include <bsd/string.h>
 
-#define KEY_LENGTH	1024
-#define PUB_EXP		3
+#define MSG_BLOCK_SIZE	2048
+#define KEY_LENGTH		1024
+#define PUB_EXP			3
 
 typedef struct
 {
@@ -41,6 +47,7 @@ class		RSAEncrypt
 		static size_t			_publicKeyLength;
 		static char *			_privateKey;
 		static size_t			_privateKeyLength;
+		static RSA *			_keypair;
 
 	public:
 		RSAEncrypt(void) = delete;
