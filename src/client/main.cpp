@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:30:03 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 04:06:37 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 04:09:38 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,10 +55,7 @@ static void	client_io(int server_socket)
 		if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) < 0)
 		{
 			if (errno == 4)
-			{
-				std::cout << "catched signal 4\n";
 				continue;
-			}
 			close(server_socket), perror("select"), exit(-1);
 		}
 		for (int i = 0; i < FD_SETSIZE; i++)

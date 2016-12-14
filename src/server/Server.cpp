@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 03:59:15 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 04:10:02 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -221,17 +221,11 @@ void	Server::LoopUntilQuit(void)
 					if (i == c.second.master)
 						ReadFromShell(i, c.first, &active_fds), readedFromShell = true;
 				if (readedFromShell)
-					std::cout << "readed from shell\n";
+					;
 				else if (i == _socket)
-				{
 					NewConnection(i, &active_fds);
-					std::cout << "new connection\n";
-				}
 				else
-				{
 					ReadFromClient(i, &active_fds);
-					std::cout << "readed on client\n";
-				}
 			}
 		if (_quit)
 			break ;
