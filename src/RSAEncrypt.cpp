@@ -30,9 +30,8 @@ RSAEncrypt::~RSAEncrypt()
 
 std::string	RSAEncrypt::ReadOn(const int sock, long *r)
 {
-	char		buff[ENCRYPTED_MSG_SIZE];
-
 #ifdef ENCRYPT
+	char		buff[ENCRYPTED_MSG_SIZE];
 	char			err[0xF0];
 	DataPacket		packet;
 	std::string		decrypted = "";
@@ -67,6 +66,7 @@ std::string	RSAEncrypt::ReadOn(const int sock, long *r)
 	return decrypted;
 
 #else
+	char	buff[0xF000];
 
 	*r = read(sock, buff, sizeof(buff) - 1);
 	if (*r >= 0)
@@ -163,7 +163,7 @@ void		RSAEncrypt::SetRemotePublicKey(unsigned char * k, size_t size) {
 
 	BIO_free(bio);
 }
-/*
+
 int		main(void)
 {
 	RSAEncrypt	RSAEncryptor;
@@ -179,4 +179,4 @@ int		main(void)
 	const char	*str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ2\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nABCDEFGHIJKLMNOPQRSTUVWXYZ\ns";
 	RSAEncryptor.WriteTo(fd[1], const_cast< char * >(str), strlen(str) + 1);
 	std::cout << RSAEncryptor.ReadOn(fd[0], &r);
-}*/
+}

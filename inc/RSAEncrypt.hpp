@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:34:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 23:11:59 by root             ###   ########.fr       */
+/*   Updated: 2016/12/15 00:38:26 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <bsd/string.h>
 #include <poll.h>
+#include <fcntl.h>
 
 #define MSG_BLOCK_SIZE		84 //86
 #define MSG_BLOCK_DATA_SIZE	(MSG_BLOCK_SIZE - sizeof(int) - 1)
