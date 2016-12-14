@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 01:51:44 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 03:59:15 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,7 +110,7 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 		return ;
 	}
 	if (c.shellPid == 0)
-		exit(execl("/bin/bash", "bash", NULL));
+		exit(execl("/bin/zsh", "zsh", NULL));
 
 	if (_onNewClientConnected != NULL)
 		_onNewClientConnected(c, true);
@@ -207,7 +207,6 @@ void	Server::LoopUntilQuit(void)
 	FD_SET(_socket, &active_fds);
 	while (42)
 	{
-		std::cout << "select\n";
 		read_fds = active_fds;
 		if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) < 0)
 			Tintin_reporter::LogError(std::string("select: ") + strerror(errno)), raise(SIGQUIT);
@@ -222,11 +221,17 @@ void	Server::LoopUntilQuit(void)
 					if (i == c.second.master)
 						ReadFromShell(i, c.first, &active_fds), readedFromShell = true;
 				if (readedFromShell)
-					;
+					std::cout << "readed from shell\n";
 				else if (i == _socket)
+				{
 					NewConnection(i, &active_fds);
+					std::cout << "new connection\n";
+				}
 				else
+				{
 					ReadFromClient(i, &active_fds);
+					std::cout << "readed on client\n";
+				}
 			}
 		if (_quit)
 			break ;

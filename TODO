@@ -1,2 +1,14 @@
 setup the network signal
-GET IT WORK WITHOUT -O2 FLAG !!!
+resollve the invisible stdin bug !
+
+TODO for jdelmar:
+implement communation RFC
+	RFC Content:
+		- send/recv RSA public key
+		- send/recv login
+		- send/recv passwd
+		- send/recv struct termios
+		- send/recv struct winsize
+		- send/recv plain text (contaning non-ascii chars)
+implement login with linux's user and password
+implement login shell when loggin in

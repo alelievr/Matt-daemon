@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:30:03 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 01:42:29 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 04:06:37 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,6 @@ static void	stdin_event(int server_socket)
 	if (ret == 0 || buff[0] == '\x04')
 		printf("quitting client ...\n"), exit(0);
 	buff[ret] = 0;
-	std::cout << "writing \"" << buff << "\" to socket\n";
 	RSAEncrypt::WriteTo(server_socket, buff, static_cast< size_t >(ret));
 }
 
@@ -85,15 +84,14 @@ static int	connect_socket(int port, char *ip)
 		perror("getprotobyname"), exit(-1);
 	if ((sock = socket(PF_INET, SOCK_STREAM, proto->p_proto)) < 0)
 		perror("socket"), exit(-1);
+	endprotoent();
 	connection.sin_family = AF_INET;
 	connection.sin_port = htons(static_cast< uint16_t >(port));
 	if (inet_pton(AF_INET, ip, &connection.sin_addr) < 0)
 		perror("inet_aton"), exit(-1);
-	std::cout << "olol\n";
 	if (connect(sock, reinterpret_cast< struct sockaddr *>(&connection), sizeof(connection)) < 0)
 		perror("connect"), exit(-1);
 	currentServerSocket = sock;
-	std::cout << "olol\n";
 	return sock;
 }
 
@@ -107,6 +105,27 @@ static void setup_terminal(void)
 	term.c_lflag &= static_cast< unsigned int >(~ICANON);
 	term.c_lflag &= static_cast< unsigned int >(~ECHO);
 	tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
+}
+
+static int	resolve_host(char *ip, char *host, const char *port)
+{
+	struct addrinfo	*info;
+	struct addrinfo	hints;
+	void			*ptr;
+	int				s;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_INET;
+	if ((s = getaddrinfo(host, port, &hints, &info)) != 0)
+		printf("getaddrinfo: %s\n", gai_strerror(s));
+	while (info)
+	{
+		ptr = &(reinterpret_cast< struct sockaddr_in * >(info->ai_addr))->sin_addr;
+		if (!(inet_ntop(info->ai_family, ptr, ip, INET_ADDRSTRLEN)))
+			return -1;
+		info = info->ai_next;
+	}
+	return (0);
 }
 
 static void	sigHandler(int s)
@@ -140,16 +159,21 @@ static void reset_terminal(void)
 
 int			main(int ac, char **av)
 {
-	int		port = 4242;
-	char	*ip = NULL;
+	const char	*portstr = "4242";
+	char	*host = NULL;
+	int		port;
+	char	ip[INET_ADDRSTRLEN];
 	int		server_socket;
 
 	if (ac == 3)
-		port = atoi(av[2]);
+		portstr = av[2];
 	if (ac >= 2)
-		ip = av[1];
+		host = av[1];
 	else
 		usage(av[0]);
+	port = atoi(portstr);
+	if (resolve_host(ip, host, portstr) == -1)
+		perror("can't resolve hostname/ip"), exit(-1);
 	if ((server_socket = connect_socket(port, ip)) == -1)
 		return (-1);
 	signal(SIGINT, sigHandler);
