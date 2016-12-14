@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:34:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/14 15:01:34 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 16:59:27 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <bsd/string.h>
 
-#define MSG_BLOCK_SIZE	2048
+#define MSG_BLOCK_SIZE	86
 #define KEY_LENGTH		1024
 #define PUB_EXP			3
 
