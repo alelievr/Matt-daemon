@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:09:04 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 16:04:12 by root             ###   ########.fr       */
+/*   Updated: 2016/12/15 00:04:29 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 #include <sys/select.h>
 #include <string.h>
 #include <termios.h>
-#include "RSA.hpp"
+#include "RSAEncrypt.hpp"
 #include "Tintin_reporter.hpp"
 #include "globals.h"
 
@@ -31,13 +31,14 @@
 typedef struct
 {
 	std::string	ip;
+	RSAEncrypt	*rsa;
 	int			clientNumber;
 	pid_t		shellPid;
 	int			master;
 	int			:32;
 }				Client;
 
-#define		NEW_CLIENT(ip)	Client{ip, -1, 0, 0}
+#define		NEW_CLIENT(ip)	Client{ip, NULL, -1, 0, 0}
 #define		WRITE			1
 #define		READ			0
 
@@ -54,7 +55,6 @@ class		Server
 		std::function< void(const Client &) >					_onClientDisconnected;
 		//map with socket in key and ip as value.
 		std::map< int, Client >										_connectedClients;
-		RSA															_rsa;
 		struct winsize *											_window;
 		struct termios *											_terminal;
 
@@ -63,6 +63,9 @@ class		Server
 		void	ReadFromClient(const int sock, fd_set *fds);
 		void	ReadFromShell(const int shellStdout, const int clientSock, fd_set *fds);
 		void	DisconnectClient(const int sock, fd_set *fds);
+
+	protected:
+		RSAEncrypt		*RSAEncryptor;
 
 	public:
 		Server(void);
@@ -74,7 +77,7 @@ class		Server
 		Server &	operator=(Server const & src) = delete;
 
 		void	LoopUntilQuit(void);
-		void	WriteToClient(int id, std::string & message);
+		void	WriteToClient(int id, char *msg, size_t size);
 
 		void	setOnNewClientConnected(std::function< void(const Client &, bool accepted) > tmp);
 		void	setOnClientRead(std::function< void(const Client &, const int sock, std::string &) > tmp);

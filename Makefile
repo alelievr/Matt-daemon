@@ -6,7 +6,7 @@
 #    By: alelievr <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/07/15 15:13:38 by alelievr          #+#    #+#              #
-#    Updated: 2016/12/12 20:43:52 by root             ###   ########.fr        #
+#    Updated: 2016/12/14 23:28:54 by root             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -25,7 +25,7 @@ SRCCLIENTDIR=	src/client
 SRCCLIENT	=	main.cpp			\
 
 SRCBOTHDIR	=	src/
-SRCBOTH		=	RSA.cpp
+SRCBOTH		=	RSAEncrypt.cpp
 
 #	Objects
 OBJCLIENTDIR=	obj/client
@@ -47,7 +47,7 @@ INCDIRS		=	inc/server inc/client inc
 
 #	Libraries
 LIBDIRS		=	
-LDLIBS		=	-lutil -lgmp
+LDLIBS		=	-lutil -lbsd -lssl -lcrypto
 
 #	Output
 SERVNAME	=	Matt_daemon
@@ -60,7 +60,7 @@ CPROTECTION	=	-z execstack -fno-stack-protector
 
 DEBUGFLAGS1	=	-fsanitize=address -ggdb -O0 -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
 DEBUGFLAGS2	=	-fsanitize-memory-track-origins=2
-OPTFLAGS1	=	-funroll-loops -O2
+OPTFLAGS1	=	-funroll-loops# -O2
 OPTFLAGS2	=	-pipe -funroll-loops -Ofast
 
 #	Framework

@@ -1,12 +1,22 @@
+TODO for alelievr:
 setup the network signal
-fix display in cmd line
 
+TODO for jdelmar:
+implement communation RFC
+	RFC Content:
+		- send/recv RSA public key
+		- send/recv login
+		- send/recv passwd
+		- send/recv struct termios
+		- send/recv struct winsize
+		- send/recv plain text (contaning non-ascii chars)
+implement login with linux's user and password (/etc/shadow)
 
 Create RFC class which analyse readed datas from client and call good callback
 RFC		rfc;
 
-	std::sting message = rsa.DecodeRead(sock);
-	rfc.Analyze(message);
+	if (rsa.ReadOn(sock, buff, size))
+		rfc.Analyze(buff, size);
 
 	[byte]hnteoijhierjho
 
@@ -32,3 +42,4 @@ RFC		rfc;
 
 		rsa.ENcodeWrite(sock, "\x81" + login);
 	}
+

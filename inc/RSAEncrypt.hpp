@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 13:34:05 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/12 23:49:25 by root             ###   ########.fr       */
+/*   Updated: 2016/12/15 00:38:26 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,51 +19,53 @@
 #include <sstream>
 #include <limits>
 
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
+
 #include <math.h>
 #include <gmp.h>
 #include <signal.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
+#include <bsd/string.h>
+#include <poll.h>
+#include <fcntl.h>
+
+#define MSG_BLOCK_SIZE		84 //86
+#define MSG_BLOCK_DATA_SIZE	(MSG_BLOCK_SIZE - sizeof(int) - 1)
+#define ENCRYPTED_MSG_SIZE	128
+#define KEY_LENGTH			1024
+#define PUB_EXP				3
 
 typedef struct
 {
-	char	*data;
-	size_t	length;
-}				EncodedData;
+	int		id;
+		char	data[MSG_BLOCK_DATA_SIZE + 1]; //+ 1 for \zero :)
+}				DataPacket;
 
-class		RSA
+class		RSAEncrypt
 {
 	private:
-		int				GenerateKeys(const char *modulo, const char *publicKey, const char *privateKey);
-		int				GetGCD(int a, int b) const;
-		int				ModInverse(int a, int m) const;
-
-		mpz_t			_privateKey;
-		mpz_t			_publicKey;
-		mpz_t			_modulo;
-		const char *	_publicKeyText;
-		const char *	_moduloText;
-
-		void			EncodeBlock(mpz_t & encoded, mpz_t & plain) const;
-		void			DecodeBlock(mpz_t & plain, mpz_t & encoded) const;
+		RSA *			_myKey;
+		RSA *			_remoteKey;
+		static int		_packetID;
+		static int		_pipe[2];
 
 	public:
-		RSA(void);
-		RSA(const RSA&) = delete;
-		virtual ~RSA(void);
+		RSAEncrypt(void);
+		RSAEncrypt(const RSAEncrypt &) = delete;
+		virtual ~RSAEncrypt(void);
 
-		RSA &			operator=(RSA const & src) = delete;
+		RSAEncrypt &	operator=(RSAEncrypt const & src) = delete;
 
-		//std::string		Encode(const std::string & message) const;
-		//std::string		Decode(const std::string & message) const;
-		void				EncodeWrite(const int sock, std::string message) const;
-		std::string			DecodeRead(const int sock, long *r) const;
+		void			WriteTo(const int sock, char *msg, size_t size);
+		std::string		ReadOn(const int sock, long *r);
 
-		const char *	GetPublicKey(void) const;
-		void			SetPublicKey(const char *k);
-		const char *	GetModulo(void) const;
-		void			SetModulo(const char *m);
+		size_t			GetMyPublicKey(unsigned char *buff);
+		void			SetRemotePublicKey(unsigned char *k, size_t size);
 
 };
 
-std::ostream &	operator<<(std::ostream & o, RSA const & r);
+std::ostream &	operator<<(std::ostream & o, RSAEncrypt const & r);

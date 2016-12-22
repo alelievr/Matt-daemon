@@ -3,15 +3,39 @@
 RFC::RFC(void) { }
 RFC::~RFC(void) { }
 
-void	RFC::Analyze(std::string message)
+void	RFC::DecodeRead(const int sock)
 {
-	if (message[0] == '\x81')
-		SendLogin(message.erase(0, 1)) {  }
+	char	buff[0xF00];
+	int		size;
+
+	size = read(sock, buff, 0xF00);
+	buff[size] = 0;
+
 }
 
-/*void	RFC::SendLogin(const int sock, const std::string Login)
+void	RFC::Analyze(char *buff, int size)
 {
-	RSA	rsa;
+	if (buff[0] == '\x81')
+		OnPublicKeyReceive(buff, size)
+		{
+			
+		}
+	else if (buff[0] == '\x82')
+		OnLoginReceive(buff, size)
+		{
+			
+		}
+}
 
-	rsa.EncodeWrite(sock, "\x81" + login);
-}*/
+void	RFC::SendPublicKey(const int sock, std::string Key)
+
+void	RFC::SendLogin(const int sock, const std::string Login)
+{
+	char		buff[130];
+	std::size_t	length;
+	
+	buff[0] = '\x82';
+	length = Login.copy(buff + 1, 0, Login.length);
+	buff[length + 1] = 0;
+	write(sock, buff, length);
+}

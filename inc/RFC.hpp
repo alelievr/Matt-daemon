@@ -4,9 +4,14 @@
 class	RFC
 {
 	private:
-	void	DecodeRead(int sock);
-	void	Analyze(std::string message);
-	std::function< void(std::string login) >	_SendLogin;
+	void	DecodeRead(const int sock);
+	void	Analyze(char *buff, int size);
+	std::function< void(std::string PublicKey) >	_OnPublicKeyReceive;
+	std::function< void(std::string login) >		_OnLoginReceive;
+	std::function< void(std::string passwd) >		_OnPasswdReceive;
+	std::function< void(struct termios term) >		_OnTermReceive;
+	std::function< void(struct winsize wsize) >		_OnWinsizeReceive;
+	std::function< void(std::string text) >			_OnTextReceive;
 	
 	public:
 	RFC(void);
@@ -14,9 +19,12 @@ class	RFC
 
 	RFC &	operator=(RFC const & src);
 
-	void	SendLogin(const int sock, const std::string login) const;
-	void	SendPassword(std::string passwd);
-	void	SendPublicKey(std::string key);
+	void	SendPublicKey(const int sock, std::string Key);
+	void	SendLogin(const int sock, const std::string Login);
+	void	SendPassword(const int sock, std::string Passwd);
+	void	SendTerm(const int sock, struct termios Term);
+	void	SendWinsize(const int sock, struct winsize Wsize);
+	void	SendText(const int sock, std::string Text);
 };
 
 std::ostream &	operator<<(std::ostream & o, RFC const & r);

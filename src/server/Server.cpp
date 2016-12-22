@@ -6,7 +6,7 @@
 /*   By: alelievr <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 16:10:29 by alelievr          #+#    #+#             */
-/*   Updated: 2016/12/13 16:05:56 by root             ###   ########.fr       */
+/*   Updated: 2016/12/14 23:51:18 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <pty.h>
+#include <poll.h>
 
 void	Server::openSocket(int port)
 {
@@ -30,7 +31,7 @@ void	Server::openSocket(int port)
 		perror("setsockopt"), exit(-1);
 
 	sin.sin_family = AF_INET;
-	sin.sin_port = htons(port);
+	sin.sin_port = htons(static_cast< uint16_t >(port));
 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
 	if (bind(_socket, reinterpret_cast< const struct sockaddr * >(&sin), sizeof(sin)) == -1)
 		perror("bind"), exit(-1);
@@ -56,7 +57,13 @@ Server::Server(int p, struct termios *term, struct winsize *win) :
 	_window(win),
 	_terminal(term)
 {
+	RSAEncryptor = new RSAEncrypt();
 	openSocket(_port);
+}
+
+Server::~Server(void)
+{
+	delete RSAEncryptor;
 }
 
 void	Server::NewConnection(const int sock, fd_set *fds)
@@ -88,6 +95,7 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 
 	//generate client number (between 0 and 3)
 	c.clientNumber = 0;
+	c.rsa = new RSAEncrypt();
 	while (42)
 	{
 		ok = true;
@@ -109,7 +117,10 @@ void	Server::NewConnection(const int sock, fd_set *fds)
 		return ;
 	}
 	if (c.shellPid == 0)
-		exit(execl("/bin/bash", "bash", NULL));
+	{
+		setsid();
+		exit(execl("/bin/zsh", "zsh", NULL));
+	}
 
 	if (_onNewClientConnected != NULL)
 		_onNewClientConnected(c, true);
@@ -132,30 +143,34 @@ void	Server::DisconnectClient(const int sock, fd_set *fds)
 	//close the client pty
 	close(c.master);
 
+	delete c.rsa;
+
 	_connectedClientsNumber--;
 
 	//close and remove client socket
 	close(sock);
 	FD_CLR(sock, fds);
 	FD_CLR(c.master, fds);
+	_connectedClients.erase(sock);
 }
 
 void	Server::ReadFromClient(const int sock, fd_set *fds)
 {
 	std::string			stdbuff;
 	long				r;
+	Client				c = _connectedClients[sock];
 
-	if ((stdbuff = _rsa.DecodeRead(sock, &r)).empty())
+	if ((stdbuff = c.rsa->ReadOn(sock, &r)).empty())
 		DisconnectClient(sock, fds);
 	else
 	{
-		Client c = _connectedClients[sock];
 		if (stdbuff[0] == static_cast< char >('\x80'))
 		{
 			stdbuff.erase(0, 1);
 			int sig = std::stoi(stdbuff);
-			killpg(getpgid(c.shellPid), sig);
 			Tintin_reporter::LogInfo("client [" + c.ip + "] has sent a signal to remote shell: \"" + strsignal(sig) + "\"");
+			if (killpg(getpgid(c.shellPid), sig) == -1)
+				Tintin_reporter::LogError(std::string("killpg error: ") + strerror(errno) + "\n");
 		}
 		else
 		{
@@ -169,8 +184,7 @@ void	Server::ReadFromClient(const int sock, fd_set *fds)
 void	Server::ReadFromShell(const int shellTTY, const int clientSock, fd_set *fds)
 {
 	char			buff[0xF000];
-	std::string		stdbuff;
-	long			r;
+	long			r = 1;
 
 	Client c = _connectedClients[clientSock];
 	if ((r = read(shellTTY, buff, sizeof(buff) - 1)) == -1)
@@ -182,9 +196,8 @@ void	Server::ReadFromShell(const int shellTTY, const int clientSock, fd_set *fds
 	if (r > 0)
 	{
 		buff[r] = 0;
-		stdbuff = std::string(buff);
-		Tintin_reporter::LogClient(c.clientNumber, "client [" + c.ip + "]: shell result: " + stdbuff);
-		WriteToClient(clientSock, stdbuff);
+		Tintin_reporter::LogClient(c.clientNumber, "client [" + c.ip + "]: shell result: " + buff);
+		WriteToClient(clientSock, buff, static_cast< size_t >(r));
 	}
 	else
 	{
@@ -193,11 +206,9 @@ void	Server::ReadFromShell(const int shellTTY, const int clientSock, fd_set *fds
 	}
 }
 
-void	Server::WriteToClient(const int sock, std::string & message)
+void	Server::WriteToClient(const int sock, char *msg, size_t size)
 {
-	if (message.size() == 0)
-		return ;
-	_rsa.EncodeWrite(sock, message);
+	RSAEncryptor->WriteTo(sock, msg, size);
 }
 
 void	Server::LoopUntilQuit(void)
@@ -232,10 +243,6 @@ void	Server::LoopUntilQuit(void)
 		if (_quit)
 			break ;
 	}
-}
-
-Server::~Server(void)
-{
 }
 
 void		Server::setOnNewClientConnected(std::function< void(const Client &, bool accepted) > tmp) { this->_onNewClientConnected = tmp; }
