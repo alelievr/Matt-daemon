@@ -27,11 +27,6 @@ void	RFC::Analyze(char *buff, size_t size)
 		}
 }*/
 
-/*void	RFC::SendData(const int sock, char *buff, size_t len, char code)
-{
-	buff[0] = code;
-	
-}*/
 /*
 void	RFC::SendPublicKey(const int sock, unsigned char *key, size_t length)
 {
@@ -54,21 +49,35 @@ void	RFC::SendPassword(const int sock, std::string passwd)
 	char		buff[120];
 	size_t		len;
 
-	//SendData(sock, buff, passwd.length, '\x83');
 	buff[0] = '\x83';
 	len = passwd.copy(buff + 1, 0, passwd.length());
 	buff[len + 1] = 0;
-	write(sock, buff, len);
+	write(sock, buff, len + 1);
 }
 /*
 void	RFC::SendTerm(const int sock, struct termios term)
 {
-	char		buff[];
+	char		buff[1024];
+	size_t		len;
+
+	buff[0] = '\x84';
+	len = sizeof(term);
+	len++;
+	std::memcpy(buff + 1, &term, sizeof(term));
+	buff[len + 1] = 0;
+	write(sock, buff, len +1);
 }
 
 void	RFC::SendWinsize(const int sock, struct winsize wsize)
 {
-	char		buff[];
+	char		buff[1024];
+	size_t		len;
+
+	buff[0] = '\x85';
+	std::memcpy(buff + 1, &wsize, sizeof(wsize));
+	len = sizeof(wsize);
+	buff[len + 1] = 0;
+	write(sock, buff, len + 1);
 }
 */
 void	RFC::SendText(const int sock, std::string text)
@@ -79,5 +88,5 @@ void	RFC::SendText(const int sock, std::string text)
 	buff[0] = '\x86';
 	len = text.copy(buff + 1, 0, text.length());
 	buff[len + 1] = 0;
-	write(sock, buff, len);
+	write(sock, buff, len + 1);
 }
